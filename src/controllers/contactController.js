@@ -3,9 +3,10 @@ import emailService from "../services/emailService.js";
 
 async function sendContactMessage(req, res, next) {
   const contactPayload = matchedData(req, { locations: ["body"] });
+  const language = req.get("X-App-Language");
 
   try {
-    await emailService.sendContactEmails(contactPayload);
+    await emailService.sendContactEmails(contactPayload, { language });
 
     return res.status(200).json({
       status: "success",

@@ -76,6 +76,50 @@ function getVerificationContent(verificationUrl, language = "EN") {
   };
 }
 
+function getContactConfirmationContent({ name, topic }, language = "EN") {
+  const lang = normalizeLanguage(language);
+
+  if (lang === "NO") {
+    return {
+      subject: "Takk for at du kontaktet PunDad",
+      text: [
+        `Hei ${name},`,
+        ``,
+        `Takk for at du kontaktet oss. Vi har mottatt meldingen din og tar kontakt hvis vi trenger mer informasjon.`,
+        ``,
+        `Emne: ${topic}`,
+        ``,
+        `PunDad`,
+      ].join("\n"),
+      html: `
+        <h2>Takk for at du kontaktet oss</h2>
+        <p>Hei ${escapeHtml(name)},</p>
+        <p>Vi har mottatt meldingen din og tar kontakt hvis vi trenger mer informasjon.</p>
+        <p><strong>Emne:</strong> ${escapeHtml(topic)}</p>
+      `,
+    };
+  }
+
+  return {
+    subject: "Thanks for contacting PunDad",
+    text: [
+      `Hi ${name},`,
+      ``,
+      `Thanks for contacting us. We received your message and will reach out if we need more information.`,
+      ``,
+      `Topic: ${topic}`,
+      ``,
+      `PunDad`,
+    ].join("\n"),
+    html: `
+      <h2>Thanks for contacting us</h2>
+      <p>Hi ${escapeHtml(name)},</p>
+      <p>We received your message and will reach out if we need more information.</p>
+      <p><strong>Topic:</strong> ${escapeHtml(topic)}</p>
+    `,
+  };
+}
+
 async function sendEmail({ to, subject, html, text, replyTo = EMAIL_REPLY_TO }) {
   return resend.emails.send({
     from: EMAIL_FROM,
@@ -113,8 +157,9 @@ async function sendVerificationEmail(to, verificationUrl, language = "EN") {
   });
 }
 
-async function sendContactEmails({ name, email, topic, message }) {
+async function sendContactEmails({ name, email, topic, message }, { language = "EN" } = {}) {
   const adminEmail = CONTACT_TOPIC_EMAILS[topic] || CONTACT_ADMIN_EMAIL;
+  const confirmationContent = getContactConfirmationContent({ name, topic }, language);
   const safeName = escapeHtml(name);
   const safeEmail = escapeHtml(email);
   const safeTopic = escapeHtml(topic);
@@ -128,16 +173,6 @@ async function sendContactEmails({ name, email, topic, message }) {
     `Topic: ${topic}`,
     ``,
     message,
-  ].join("\n");
-
-  const userText = [
-    `Hi ${name},`,
-    ``,
-    `Thanks for contacting us, we received your message.`,
-    ``,
-    `Topic: ${topic}`,
-    ``,
-    `PunDad`,
   ].join("\n");
 
   const results = await Promise.all([
@@ -157,14 +192,9 @@ async function sendContactEmails({ name, email, topic, message }) {
     }),
     sendEmail({
       to: email,
-      subject: "Thanks for contacting PunDad",
-      text: userText,
-      html: `
-        <h2>Thanks for contacting us</h2>
-        <p>Hi ${safeName},</p>
-        <p>Thanks for contacting us, we received your message.</p>
-        <p><strong>Topic:</strong> ${safeTopic}</p>
-      `,
+      subject: confirmationContent.subject,
+      text: confirmationContent.text,
+      html: confirmationContent.html,
     }),
   ]);
 
