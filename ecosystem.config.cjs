@@ -2,20 +2,21 @@ module.exports = {
   apps: [
     {
       name: "pundad-api",
+      cwd: "/home/pi/projects/backend/Blog-API",
       script: "src/server.js",
       interpreter: "node",
       env: {
         NODE_ENV: "development",
         LOG_LEVEL: "debug",
         PORT: 4001,
-        FRONTEND_BASE_URL: "http://127.0.0.1:5173"
+        FRONTEND_BASE_URL: "http://127.0.0.1:5173",
       },
       env_production: {
         NODE_ENV: "production",
         LOG_LEVEL: "info",
         PORT: 4000,
         UPLOADS_DIR: "/var/www/pundad-uploads",
-        FRONTEND_BASE_URL: "https://pundad.app"
+        FRONTEND_BASE_URL: "https://pundad.app",
       },
       autorestart: true,
       max_restarts: 10,
@@ -23,15 +24,16 @@ module.exports = {
     },
     {
       name: "pundad-worker",
+      cwd: "/home/pi/projects/backend/Blog-API",
       script: "src/jobs/worker.js",
       interpreter: "node",
       env: {
         NODE_ENV: "development",
-        LOG_LEVEL: "debug"
+        LOG_LEVEL: "debug",
       },
       env_production: {
         NODE_ENV: "production",
-        LOG_LEVEL: "info"
+        LOG_LEVEL: "info",
       },
       autorestart: true,
       max_restarts: 10,
@@ -44,14 +46,15 @@ module.exports = {
 
 // These are the main ones worth memorizing.
 
-// Start from ecosystem
+// START FROM ECOSYSTEM
 // pm2 start ecosystem.config.cjs --env production
 // Start one app only
 // pm2 start ecosystem.config.cjs --only pundad-api --env production
 // pm2 start ecosystem.config.cjs --only pundad-worker --env production
 // See all processes
 // pm2 list
-// Detailed info
+
+// DETAILED INFO
 // pm2 show pundad-api
 // pm2 show pundad-worker
 // pm2 describe pundad-api
@@ -108,6 +111,7 @@ module.exports = {
 // ls -lah ~/.pm2/logs
 // tail -f ~/.pm2/logs/pundad-api-out.log
 // tail -f ~/.pm2/logs/pundad-worker-out.log
+
 // Install log rotation
 // pm2 install pm2-logrotate
 // pm2 set pm2-logrotate:max_size 10M

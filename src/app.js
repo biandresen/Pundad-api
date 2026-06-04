@@ -1,5 +1,4 @@
 import express from "express";
-import path from "path";
 import compression from "compression";
 import cors from "cors";
 import helmet from "helmet";
@@ -7,6 +6,7 @@ import hpp from "hpp";
 import cookieParser from "cookie-parser";
 
 // INTERNAL IMPORTS
+import { UPLOADS_DIR } from "./config/paths.js";
 import CustomError from "./utils/CustomError.js";
 import globalErrorHandler from "./middleware/globalErrorHandler.js";
 import requestContext from "./middleware/requestContext.js";
@@ -22,11 +22,6 @@ const app = express();
  * Use a Set for fast lookup when checking whether an origin is allowed.
  */
 const allowedOrigins = new Set(CORS_ORIGINS);
-
-/**
- * Resolve uploads directory once at startup.
- */
-const uploadsPath = path.join(process.cwd(), "uploads");
 
 /**
  * Trust the first proxy hop.
@@ -90,7 +85,7 @@ app.use(compression());
 // --------------------------------------------------
 app.use(
   "/uploads",
-  express.static(uploadsPath, {
+  express.static(UPLOADS_DIR, {
     etag: true,
     lastModified: true,
     setHeaders: (res) => {
