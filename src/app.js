@@ -125,6 +125,7 @@ app.use("/api/v1/badges", routes.badgeRouter);
 app.use("/api/v1/featured", routes.featuredRouter);
 app.use("/api/v1/leaderboard", routes.leaderboardRouter);
 app.use("/api/v1/moderation", routes.moderationRouter);
+app.use("/api/v1/contact", routes.contactRouter);
 
 // --------------------------------------------------
 // 11) UNHANDLED ROUTES

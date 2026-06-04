@@ -5,9 +5,25 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const EMAIL_FROM = process.env.EMAIL_FROM || "PunDad <noreply@pundad.app>";
 const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || "support@pundad.app";
+const CONTACT_ADMIN_EMAIL = process.env.CONTACT_ADMIN_EMAIL || "contact@pundad.app";
+const CONTACT_TOPIC_EMAILS = Object.freeze({
+  BUG: process.env.CONTACT_BUG_EMAIL || "bugs@pundad.app",
+  FEATURE: process.env.CONTACT_FEATURE_EMAIL || "features@pundad.app",
+  SUGGESTION: process.env.CONTACT_SUGGESTION_EMAIL || "suggestions@pundad.app",
+  FEEDBACK: process.env.CONTACT_FEEDBACK_EMAIL || "feedback@pundad.app",
+});
+
+function escapeHtml(value = "") {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
 
 function getResetPasswordContent(resetUrl, language = "EN") {
-  const lang = normalizeLanguage(language)
+  const lang = normalizeLanguage(language);
   if (lang === "NO") {
     return {
       subject: "Tilbakestill passordet ditt",
@@ -34,7 +50,7 @@ function getResetPasswordContent(resetUrl, language = "EN") {
 }
 
 function getVerificationContent(verificationUrl, language = "EN") {
-  const lang = normalizeLanguage(language)
+  const lang = normalizeLanguage(language);
   if (lang === "NO") {
     return {
       subject: "Bekreft PunDad-kontoen din",
@@ -60,15 +76,21 @@ function getVerificationContent(verificationUrl, language = "EN") {
   };
 }
 
-async function sendEmail({ to, subject, html, text }) {
+async function sendEmail({ to, subject, html, text, replyTo = EMAIL_REPLY_TO }) {
   return resend.emails.send({
     from: EMAIL_FROM,
     to,
     subject,
     html,
     text,
-    replyTo: EMAIL_REPLY_TO,
+    replyTo,
   });
+}
+
+function assertEmailSent(result) {
+  if (result?.error) {
+    throw new Error(result.error.message || "Resend failed to send email");
+  }
 }
 
 async function sendResetPasswordEmail(to, resetUrl, language = "EN") {
@@ -91,7 +113,67 @@ async function sendVerificationEmail(to, verificationUrl, language = "EN") {
   });
 }
 
+async function sendContactEmails({ name, email, topic, message }) {
+  const adminEmail = CONTACT_TOPIC_EMAILS[topic] || CONTACT_ADMIN_EMAIL;
+  const safeName = escapeHtml(name);
+  const safeEmail = escapeHtml(email);
+  const safeTopic = escapeHtml(topic);
+  const safeMessage = escapeHtml(message).replaceAll("\n", "<br>");
+
+  const adminText = [
+    `New PunDad contact message`,
+    ``,
+    `Name: ${name}`,
+    `Email: ${email}`,
+    `Topic: ${topic}`,
+    ``,
+    message,
+  ].join("\n");
+
+  const userText = [
+    `Hi ${name},`,
+    ``,
+    `Thanks for contacting us, we received your message.`,
+    ``,
+    `Topic: ${topic}`,
+    ``,
+    `PunDad`,
+  ].join("\n");
+
+  const results = await Promise.all([
+    sendEmail({
+      to: adminEmail,
+      subject: `[PunDad Contact] ${topic} - ${name}`,
+      text: adminText,
+      html: `
+        <h2>New PunDad contact message</h2>
+        <p><strong>Name:</strong> ${safeName}</p>
+        <p><strong>Email:</strong> ${safeEmail}</p>
+        <p><strong>Topic:</strong> ${safeTopic}</p>
+        <p><strong>Message:</strong></p>
+        <p>${safeMessage}</p>
+      `,
+      replyTo: email,
+    }),
+    sendEmail({
+      to: email,
+      subject: "Thanks for contacting PunDad",
+      text: userText,
+      html: `
+        <h2>Thanks for contacting us</h2>
+        <p>Hi ${safeName},</p>
+        <p>Thanks for contacting us, we received your message.</p>
+        <p><strong>Topic:</strong> ${safeTopic}</p>
+      `,
+    }),
+  ]);
+
+  results.forEach(assertEmailSent);
+  return results;
+}
+
 export default {
   sendResetPasswordEmail,
   sendVerificationEmail,
+  sendContactEmails,
 };

@@ -7,6 +7,7 @@ import badgeRouter from "./badgeRouter.js";
 import featuredRouter from "./featuredRouter.js";
 import leaderboardRouter from "./leaderboardRouter.js";
 import moderationRouter from "./moderationRouter.js";
+import contactRouter from "./contactRouter.js";
 
 export default {
   authRouter,
@@ -18,4 +19,5 @@ export default {
   featuredRouter,
   leaderboardRouter,
   moderationRouter,
+  contactRouter,
 };

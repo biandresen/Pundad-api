@@ -12,75 +12,75 @@ import logService from "../services/logService.js";
 import { getModerationLogData } from "../utils/moderationLogData.js";
 
 async function getAllPosts(req, res, next) {
-    const language = req.language;
+  const language = req.language;
 
-    const queryParams = matchedData(req);
-    queryParams.tag = queryParams.tag ? normalizeTags(queryParams.tag) : undefined;
+  const queryParams = matchedData(req);
+  queryParams.tag = queryParams.tag ? normalizeTags(queryParams.tag) : undefined;
 
-    const { items, total, page, limit } = await postService.getAllPosts({
-      ...queryParams,
-      language,
-    });
+  const { items, total, page, limit } = await postService.getAllPosts({
+    ...queryParams,
+    language,
+  });
 
-    const meta = buildPageMeta({ page, limit, total });
+  const meta = buildPageMeta({ page, limit, total });
 
-    const message = items.length > 0 ? "Post(s) retrieved successfully" : "No posts found";
-    return successResponse(res, 200, message, items, items.length, meta);
+  const message = items.length > 0 ? "Post(s) retrieved successfully" : "No posts found";
+  return successResponse(res, 200, message, items, items.length, meta);
 }
 
 async function getPopularPosts(req, res, next) {
-    const language = req.language;
+  const language = req.language;
 
-    const queryParams = matchedData(req, { locations: ["query"] }) || {};
-    queryParams.tag = queryParams.tag ? normalizeTags(queryParams.tag) : undefined;
+  const queryParams = matchedData(req, { locations: ["query"] }) || {};
+  queryParams.tag = queryParams.tag ? normalizeTags(queryParams.tag) : undefined;
 
-    const posts = await postService.getPopularPosts({ ...queryParams, language });
+  const posts = await postService.getPopularPosts({ ...queryParams, language });
 
-    const message = posts.length > 0 ? "Post(s) retrieved successfully" : "No posts found";
-    const data = posts.length > 0 ? posts : [];
-    const count = posts.length;
+  const message = posts.length > 0 ? "Post(s) retrieved successfully" : "No posts found";
+  const data = posts.length > 0 ? posts : [];
+  const count = posts.length;
 
-    return successResponse(res, 200, message, data, count);
+  return successResponse(res, 200, message, data, count);
 }
 
 async function getRandomPost(req, res, next) {
-    const language = req.language;
+  const language = req.language;
 
-    const post = await postService.getRandomPost({ language });
-    const message = post ? "Post retrieved successfully" : "No post found";
-    const count = post ? 1 : 0;
+  const post = await postService.getRandomPost({ language });
+  const message = post ? "Post retrieved successfully" : "No post found";
+  const count = post ? 1 : 0;
 
-    return successResponse(res, 200, message, post, count);
+  return successResponse(res, 200, message, post, count);
 }
 
 async function getDailyPost(req, res, next) {
-    const language = req.language;
+  const language = req.language;
 
-    const post = await postService.getDailyPost({ language });
-    const message = post ? "Post retrieved successfully" : "No post found";
-    const count = post ? 1 : 0;
+  const post = await postService.getDailyPost({ language });
+  const message = post ? "Post retrieved successfully" : "No post found";
+  const count = post ? 1 : 0;
 
-    return successResponse(res, 200, message, post, count);
+  return successResponse(res, 200, message, post, count);
 }
 
 async function getAllPostsFromUser(req, res, next) {
-    const language = req.language;
+  const language = req.language;
 
-    const userId = Number(req.params?.id);
-    if (isNaN(userId)) return next(new CustomError(400, "Invalid id given"));
+  const userId = Number(req.params?.id);
+  if (isNaN(userId)) return next(new CustomError(400, "Invalid id given"));
 
-    const queryParams = matchedData(req);
-    queryParams.tag = queryParams.tag ? normalizeTags(queryParams.tag) : undefined;
+  const queryParams = matchedData(req);
+  queryParams.tag = queryParams.tag ? normalizeTags(queryParams.tag) : undefined;
 
-    const { items, total, page, limit } = await postService.getAllPostsByAuthor(userId, {
-      ...queryParams,
-      language,
-    });
+  const { items, total, page, limit } = await postService.getAllPostsByAuthor(userId, {
+    ...queryParams,
+    language,
+  });
 
-    const meta = buildPageMeta({ page, limit, total });
+  const meta = buildPageMeta({ page, limit, total });
 
-    const message = items.length > 0 ? "Post(s) retrieved successfully" : "No posts found for this user";
-    return successResponse(res, 200, message, items, items.length, meta);
+  const message = items.length > 0 ? "Post(s) retrieved successfully" : "No posts found for this user";
+  return successResponse(res, 200, message, items, items.length, meta);
 }
 
 async function getPost(req, res, next) {
@@ -108,89 +108,15 @@ async function getPost(req, res, next) {
 }
 
 async function createPost(req, res, next) {
-    const language = req.language;
+  const language = req.language;
 
-    const { title, body, published, tags } = matchedData(req);
+  const { title, body, published, tags } = matchedData(req);
 
-     const moderation = moderateFields(
-    {
-      title,
-      body,
-      tags: Array.isArray(tags) ? tags.join(" ") : tags,
-    },
-  );
-
-   if (moderation.blocked) {
-    const { matchedTerms, matchedVariants } = getModerationLogData(moderation);
-
-    await logService.createModerationEvent({
-      userId: Number(req.user?.id) || null,
-      action: "create_post",
-      blocked: true,
-      fieldNames: ["title", "body", "tags"],
-      matchedTerms,
-      matchedVariants,
-      contentPreview: [title, body].filter(Boolean).join(" | ").slice(0, 160),
-      ipAddress: req.ip,
-      userAgent: req.headers["user-agent"] || null,
-    });
-
-    return next(
-      new CustomError(400, "Content contains blocked language", [
-        { field: "content", message: "Contains inappropriate language" },
-      ])
-    );
-  }
-
-    const authorId = Number(req.user?.id);
-    if (isNaN(authorId)) return next(new CustomError(401, "Unauthorized"));
-
-    const normalizedTags = tags ? normalizeTags(tags) : [];
-
-    const createdPost = await postService.createPost(
-      authorId,
-      title,
-      body,
-      published,
-      normalizedTags,
-      { language }
-    );
-
-    const message = published === true ? "Post was successfully published" : "Post was successfully drafted";
-
-    if (createdPost?.published) {
-      await logService.createProductEvent({
-        userId: authorId,
-        type: "POST_PUBLISHED",
-        path: req.originalUrl,
-        language: createdPost.language,
-        metadata: {
-          postId: createdPost.id,
-        },
-        ipAddress: req.ip,
-        userAgent: req.headers["user-agent"] || null,
-      });
-    }
-
-    return successResponse(res, 200, message, createdPost, 1);
-}
-
-async function updatePost(req, res, next) {
-    const language = req.language;
-
-    const postId = Number(req.params?.id);
-    if (isNaN(postId)) return next(new CustomError(400, "Invalid id given"));
-
-    const { title, body, published, tags } = matchedData(req);
-    const normalizedTags = tags ? normalizeTags(tags) : undefined;
-
-    const moderation = moderateFields(
-    {
-      title,
-      body,
-      tags: Array.isArray(normalizedTags) ? normalizedTags.join(" ") : "",
-    },
-    );
+  const moderation = moderateFields({
+    title,
+    body,
+    tags: Array.isArray(tags) ? tags.join(" ") : tags,
+  });
 
   if (moderation.blocked) {
     const { matchedTerms, matchedVariants } = getModerationLogData(moderation);
@@ -210,96 +136,161 @@ async function updatePost(req, res, next) {
     return next(
       new CustomError(400, "Content contains blocked language", [
         { field: "content", message: "Contains inappropriate language" },
-      ])
+      ]),
     );
   }
 
-    const updatedPost = await postService.updatePost(
+  const authorId = Number(req.user?.id);
+  if (isNaN(authorId)) return next(new CustomError(401, "Unauthorized"));
+
+  const normalizedTags = tags ? normalizeTags(tags) : [];
+
+  const createdPost = await postService.createPost(authorId, title, body, published, normalizedTags, {
+    language,
+  });
+
+  const message = published === true ? "Post was successfully published" : "Post was successfully drafted";
+
+  if (createdPost?.published) {
+    await logService.createProductEvent({
+      userId: authorId,
+      type: "POST_PUBLISHED",
+      path: req.originalUrl,
+      language: createdPost.language,
+      metadata: {
+        postId: createdPost.id,
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"] || null,
+    });
+  }
+
+  return successResponse(res, 200, message, createdPost, 1);
+}
+
+async function updatePost(req, res, next) {
+  const language = req.language;
+
+  const postId = Number(req.params?.id);
+  if (isNaN(postId)) return next(new CustomError(400, "Invalid id given"));
+
+  const { title, body, published, tags } = matchedData(req);
+  const normalizedTags = tags ? normalizeTags(tags) : undefined;
+
+  const moderation = moderateFields({
+    title,
+    body,
+    tags: Array.isArray(normalizedTags) ? normalizedTags.join(" ") : "",
+  });
+
+  if (moderation.blocked) {
+    const { matchedTerms, matchedVariants } = getModerationLogData(moderation);
+
+    await logService.createModerationEvent({
+      userId: Number(req.user?.id) || null,
+      action: "create_post",
+      blocked: true,
+      fieldNames: ["title", "body", "tags"],
+      matchedTerms,
+      matchedVariants,
+      contentPreview: [title, body].filter(Boolean).join(" | ").slice(0, 160),
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"] || null,
+    });
+
+    return next(
+      new CustomError(400, "Content contains blocked language", [
+        { field: "content", message: "Contains inappropriate language" },
+      ]),
+    );
+  }
+
+  const updatedPost = await postService.updatePost(
     postId,
     { title, body, published, tags: normalizedTags },
     {
       language,
       requesterId: req.user?.id ?? null,
       requesterRole: req.user?.role ?? null,
-    }
+    },
   );
 
-    if (!updatedPost) return next(new CustomError(404, "Post not found for this language"));
+  if (!updatedPost) return next(new CustomError(404, "Post not found for this language"));
 
-    return successResponse(res, 200, "Post was successfully updated", updatedPost, 1);
+  return successResponse(res, 200, "Post was successfully updated", updatedPost, 1);
 }
 
 async function deletePost(req, res, next) {
-    const language = req.language;
+  const language = req.language;
 
-    const postId = Number(req.params?.id);
-    if (isNaN(postId)) return next(new CustomError(400, "Invalid id given"));
+  const postId = Number(req.params?.id);
+  if (isNaN(postId)) return next(new CustomError(400, "Invalid id given"));
 
-    const deleted = await postService.deletePost(postId, { language });
-    if (!deleted) return next(new CustomError(404, "Post not found for this language"));
+  const deleted = await postService.deletePost(postId, { language });
+  if (!deleted) return next(new CustomError(404, "Post not found for this language"));
 
-    return successResponse(res, 200, "Post successfully deleted");
+  return successResponse(res, 200, "Post successfully deleted");
 }
 
 async function getAllDraftsFromCurrentUser(req, res, next) {
-    const language = req.language;
+  const language = req.language;
 
-    const userId = Number(req.user?.id);
-    if (isNaN(userId)) return next(new CustomError(401, "Unauthorized"));
+  const userId = Number(req.user?.id);
+  if (isNaN(userId)) return next(new CustomError(401, "Unauthorized"));
 
-    const queryParams = matchedData(req);
-    queryParams.tag = queryParams.tag ? normalizeTags(queryParams.tag) : undefined;
-    queryParams.published = false;
+  const queryParams = matchedData(req);
+  queryParams.tag = queryParams.tag ? normalizeTags(queryParams.tag) : undefined;
+  queryParams.published = false;
 
-    const { items, total, page, limit } = await postService.getAllPostsByAuthor(userId, {
-      ...queryParams,
-      language,
-    });
+  const { items, total, page, limit } = await postService.getAllPostsByAuthor(userId, {
+    ...queryParams,
+    language,
+  });
 
-    const meta = buildPageMeta({ page, limit, total });
+  const meta = buildPageMeta({ page, limit, total });
 
-    const message = items.length > 0 ? "Drafts retrieved successfully" : "No drafts found for this user";
-    return successResponse(res, 200, message, items, items.length, meta);
+  const message = items.length > 0 ? "Drafts retrieved successfully" : "No drafts found for this user";
+  return successResponse(res, 200, message, items, items.length, meta);
 }
 
 async function getAllDrafts(req, res, next) {
-    const language = req.language;
+  const language = req.language;
 
-    const queryParams = matchedData(req);
-    queryParams.tag = queryParams.tag ? normalizeTags(queryParams.tag) : undefined;
+  const queryParams = matchedData(req);
+  queryParams.tag = queryParams.tag ? normalizeTags(queryParams.tag) : undefined;
 
-    const drafts = await postService.getAllDrafts({ ...queryParams, language });
+  const drafts = await postService.getAllDrafts({ ...queryParams, language });
 
-    const message = drafts.length > 0 ? "Drafts retrieved successfully" : "No drafts found";
-    const data = drafts.length > 0 ? drafts : [];
-    const count = drafts.length;
+  const message = drafts.length > 0 ? "Drafts retrieved successfully" : "No drafts found";
+  const data = drafts.length > 0 ? drafts : [];
+  const count = drafts.length;
 
-    return successResponse(res, 200, message, data, count);
+  return successResponse(res, 200, message, data, count);
 }
 
 async function publishDraft(req, res, next) {
-    const language = req.language;
+  const language = req.language;
 
-    const postId = Number(req.params?.id);
-    if (isNaN(postId)) return next(new CustomError(400, "Invalid id given"));
+  const postId = Number(req.params?.id);
+  if (isNaN(postId)) return next(new CustomError(400, "Invalid id given"));
 
-    const published = await postService.publishDraft(postId, { language });
-    if (!published) return next(new CustomError(404, "Draft not found for this language"));
+  const published = await postService.publishDraft(postId, { language });
+  if (!published) return next(new CustomError(404, "Draft not found for this language"));
 
-    await logService.createProductEvent({
-      userId: Number(req.user?.id) || null,
-      type: "POST_PUBLISHED",
-      path: req.originalUrl,
-      language,
-      metadata: {
-        postId,
-        source: "publish_draft",
-      },
-      ipAddress: req.ip,
-      userAgent: req.headers["user-agent"] || null,
-    });
+  await logService.createProductEvent({
+    userId: Number(req.user?.id) || null,
+    type: "POST_PUBLISHED",
+    path: req.originalUrl,
+    language,
+    metadata: {
+      postId,
+      source: "publish_draft",
+    },
+    ipAddress: req.ip,
+    userAgent: req.headers["user-agent"] || null,
+  });
 
-    return successResponse(res, 200, "Draft successfully published");
+  return successResponse(res, 200, "Draft successfully published");
 }
 
 async function searchPosts(req, res, next) {
@@ -318,25 +309,14 @@ async function searchPosts(req, res, next) {
   const parsedPage = Math.max(1, parseInt(page, 10) || 1);
   const parsedLimit = Math.max(1, parseInt(limit, 10) || 15);
 
-  if (
-    !searchParameters ||
-    typeof searchParameters !== "string" ||
-    !searchParameters.trim()
-  ) {
+  if (!searchParameters || typeof searchParameters !== "string" || !searchParameters.trim()) {
     const meta = buildPageMeta({
       page: parsedPage,
       limit: parsedLimit,
       total: 0,
     });
 
-    return successResponse(
-      res,
-      200,
-      "No search parameters were given",
-      [],
-      0,
-      meta
-    );
+    return successResponse(res, 200, "No search parameters were given", [], 0, meta);
   }
 
   const terms = searchParameters
@@ -365,17 +345,21 @@ async function searchPosts(req, res, next) {
       userAgent: req.headers["user-agent"] || null,
     });
 
-    return successResponse(res,200, "No search parameters were given", [], 0, meta);
+    return successResponse(res, 200, "No search parameters were given", [], 0, meta);
   }
 
-  const { items, total, page: currentPage, limit: currentLimit } =
-    await postService.searchPosts(terms, {
-      language,
-      page: parsedPage,
-      limit: parsedLimit,
-      sort,
-      filters,
-    });
+  const {
+    items,
+    total,
+    page: currentPage,
+    limit: currentLimit,
+  } = await postService.searchPosts(terms, {
+    language,
+    page: parsedPage,
+    limit: parsedLimit,
+    sort,
+    filters,
+  });
 
   const meta = buildPageMeta({
     page: currentPage,
@@ -383,8 +367,7 @@ async function searchPosts(req, res, next) {
     total,
   });
 
-  const message =
-    items.length > 0 ? "Posts retrieved successfully" : "No posts were found";
+  const message = items.length > 0 ? "Posts retrieved successfully" : "No posts were found";
 
   return successResponse(res, 200, message, items, items.length, meta);
 }

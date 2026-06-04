@@ -61,6 +61,13 @@ export const passwordResetLimiter = rateLimit({
   handler: buildRateLimitHandler("Too many password reset attempts. Try again later."),
 });
 
+export const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  ...headers,
+  handler: buildRateLimitHandler("Too many contact messages. Try again later."),
+});
+
 export const uploadLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
