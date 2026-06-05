@@ -50,7 +50,7 @@ export const BADGE = Object.freeze({
   FASTEST_GROWING: "FASTEST_GROWING",
 });
 
-export const FEATURED_POST = Object.freeze({
+export const FEATURED_JOKE = Object.freeze({
   DAILY: "DAILY_JOKE",
   TOP_CREATOR_MONTH: "TOP_CREATOR_MONTH",
   TRENDING_WEEK: "TRENDING_WEEK",

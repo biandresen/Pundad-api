@@ -14,7 +14,7 @@ router.get(
   "/:id",
   queryParametersValidator,
   checkValidation,
-  asyncErrorHandler(commentController.getAllCommentsFromPost)
+  asyncErrorHandler(commentController.getAllCommentsFromJoke)
 );
 
 router.patch(

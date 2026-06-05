@@ -1,7 +1,7 @@
 /*
   Warnings:
 
-  - A unique constraint covering the columns `[type,date,language]` on the table `FeaturedPost` will be added. If there are existing duplicate values, this will fail.
+  - A unique constraint covering the columns `[type,date,language]` on the table `FeaturedJoke` will be added. If there are existing duplicate values, this will fail.
   - A unique constraint covering the columns `[language,name]` on the table `Tag` will be added. If there are existing duplicate values, this will fail.
 
 */
@@ -9,55 +9,55 @@
 CREATE TYPE "Language" AS ENUM ('NO', 'EN');
 
 -- DropIndex
-DROP INDEX "FeaturedPost_date_idx";
+DROP INDEX "FeaturedJoke_date_idx";
 
 -- DropIndex
-DROP INDEX "FeaturedPost_type_date_key";
+DROP INDEX "FeaturedJoke_type_date_key";
 
 -- DropIndex
 DROP INDEX "Tag_name_key";
 
 -- AlterTable
-ALTER TABLE "BlogPost" ADD COLUMN     "language" "Language" NOT NULL DEFAULT 'NO';
+ALTER TABLE "Joke" ADD COLUMN     "language" "Language" NOT NULL DEFAULT 'NO';
 
 -- AlterTable
 ALTER TABLE "Comment" ADD COLUMN     "language" "Language" NOT NULL DEFAULT 'NO';
 
 -- AlterTable
-ALTER TABLE "FeaturedPost" ADD COLUMN     "language" "Language" NOT NULL DEFAULT 'NO';
+ALTER TABLE "FeaturedJoke" ADD COLUMN     "language" "Language" NOT NULL DEFAULT 'NO';
 
 -- AlterTable
-ALTER TABLE "PostLike" ADD COLUMN     "language" "Language" NOT NULL DEFAULT 'NO';
+ALTER TABLE "JokeLike" ADD COLUMN     "language" "Language" NOT NULL DEFAULT 'NO';
 
 -- AlterTable
 ALTER TABLE "Tag" ADD COLUMN     "language" "Language" NOT NULL DEFAULT 'NO';
 
 -- CreateIndex
-CREATE INDEX "BlogPost_language_published_createdAt_idx" ON "BlogPost"("language", "published", "createdAt");
+CREATE INDEX "Joke_language_published_createdAt_idx" ON "Joke"("language", "published", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "BlogPost_language_published_updatedAt_idx" ON "BlogPost"("language", "published", "updatedAt");
+CREATE INDEX "Joke_language_published_updatedAt_idx" ON "Joke"("language", "published", "updatedAt");
 
 -- CreateIndex
-CREATE INDEX "BlogPost_authorId_language_createdAt_idx" ON "BlogPost"("authorId", "language", "createdAt");
+CREATE INDEX "Joke_authorId_language_createdAt_idx" ON "Joke"("authorId", "language", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "BlogPost_language_published_idx" ON "BlogPost"("language", "published");
+CREATE INDEX "Joke_language_published_idx" ON "Joke"("language", "published");
 
 -- CreateIndex
 CREATE INDEX "Comment_language_createdAt_idx" ON "Comment"("language", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "FeaturedPost_language_type_date_idx" ON "FeaturedPost"("language", "type", "date");
+CREATE INDEX "FeaturedJoke_language_type_date_idx" ON "FeaturedJoke"("language", "type", "date");
 
 -- CreateIndex
-CREATE INDEX "FeaturedPost_language_date_idx" ON "FeaturedPost"("language", "date");
+CREATE INDEX "FeaturedJoke_language_date_idx" ON "FeaturedJoke"("language", "date");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "FeaturedPost_type_date_language_key" ON "FeaturedPost"("type", "date", "language");
+CREATE UNIQUE INDEX "FeaturedJoke_type_date_language_key" ON "FeaturedJoke"("type", "date", "language");
 
 -- CreateIndex
-CREATE INDEX "PostLike_language_createdAt_idx" ON "PostLike"("language", "createdAt");
+CREATE INDEX "JokeLike_language_createdAt_idx" ON "JokeLike"("language", "createdAt");
 
 -- CreateIndex
 CREATE INDEX "Tag_language_name_idx" ON "Tag"("language", "name");

@@ -1,5 +1,5 @@
 import { matchedData } from "express-validator";
-import postService from "../services/postService.js";
+import jokeService from "../services/jokeService.js";
 import userService from "../services/userService.js";
 import CustomError from "../utils/CustomError.js";
 import normalizeTags from "../utils/normalizeTags.js";
@@ -11,59 +11,59 @@ import { moderateFields } from "../utils/moderation.js";
 import logService from "../services/logService.js";
 import { getModerationLogData } from "../utils/moderationLogData.js";
 
-async function getAllPosts(req, res, next) {
+async function getAllJokes(req, res, next) {
   const language = req.language;
 
   const queryParams = matchedData(req);
   queryParams.tag = queryParams.tag ? normalizeTags(queryParams.tag) : undefined;
 
-  const { items, total, page, limit } = await postService.getAllPosts({
+  const { items, total, page, limit } = await jokeService.getAllJokes({
     ...queryParams,
     language,
   });
 
   const meta = buildPageMeta({ page, limit, total });
 
-  const message = items.length > 0 ? "Post(s) retrieved successfully" : "No posts found";
+  const message = items.length > 0 ? "Joke(s) retrieved successfully" : "No jokes found";
   return successResponse(res, 200, message, items, items.length, meta);
 }
 
-async function getPopularPosts(req, res, next) {
+async function getPopularJokes(req, res, next) {
   const language = req.language;
 
   const queryParams = matchedData(req, { locations: ["query"] }) || {};
   queryParams.tag = queryParams.tag ? normalizeTags(queryParams.tag) : undefined;
 
-  const posts = await postService.getPopularPosts({ ...queryParams, language });
+  const jokes = await jokeService.getPopularJokes({ ...queryParams, language });
 
-  const message = posts.length > 0 ? "Post(s) retrieved successfully" : "No posts found";
-  const data = posts.length > 0 ? posts : [];
-  const count = posts.length;
+  const message = jokes.length > 0 ? "Joke(s) retrieved successfully" : "No jokes found";
+  const data = jokes.length > 0 ? jokes : [];
+  const count = jokes.length;
 
   return successResponse(res, 200, message, data, count);
 }
 
-async function getRandomPost(req, res, next) {
+async function getRandomJoke(req, res, next) {
   const language = req.language;
 
-  const post = await postService.getRandomPost({ language });
-  const message = post ? "Post retrieved successfully" : "No post found";
-  const count = post ? 1 : 0;
+  const joke = await jokeService.getRandomJoke({ language });
+  const message = joke ? "Joke retrieved successfully" : "No joke found";
+  const count = joke ? 1 : 0;
 
-  return successResponse(res, 200, message, post, count);
+  return successResponse(res, 200, message, joke, count);
 }
 
-async function getDailyPost(req, res, next) {
+async function getDailyJoke(req, res, next) {
   const language = req.language;
 
-  const post = await postService.getDailyPost({ language });
-  const message = post ? "Post retrieved successfully" : "No post found";
-  const count = post ? 1 : 0;
+  const joke = await jokeService.getDailyJoke({ language });
+  const message = joke ? "Joke retrieved successfully" : "No joke found";
+  const count = joke ? 1 : 0;
 
-  return successResponse(res, 200, message, post, count);
+  return successResponse(res, 200, message, joke, count);
 }
 
-async function getAllPostsFromUser(req, res, next) {
+async function getAllJokesFromUser(req, res, next) {
   const language = req.language;
 
   const userId = Number(req.params?.id);
@@ -72,42 +72,42 @@ async function getAllPostsFromUser(req, res, next) {
   const queryParams = matchedData(req);
   queryParams.tag = queryParams.tag ? normalizeTags(queryParams.tag) : undefined;
 
-  const { items, total, page, limit } = await postService.getAllPostsByAuthor(userId, {
+  const { items, total, page, limit } = await jokeService.getAllJokesByAuthor(userId, {
     ...queryParams,
     language,
   });
 
   const meta = buildPageMeta({ page, limit, total });
 
-  const message = items.length > 0 ? "Post(s) retrieved successfully" : "No posts found for this user";
+  const message = items.length > 0 ? "Joke(s) retrieved successfully" : "No jokes found for this user";
   return successResponse(res, 200, message, items, items.length, meta);
 }
 
-async function getPost(req, res, next) {
+async function getJoke(req, res, next) {
   const language = req.language;
 
-  const postId = Number(req.params?.id);
-  if (isNaN(postId)) {
+  const jokeId = Number(req.params?.id);
+  if (isNaN(jokeId)) {
     return next(new CustomError(400, "Invalid id given"));
   }
 
   const requesterId = Number(req.user?.id);
   const requesterRole = req.user?.role ?? null;
 
-  const post = await postService.getPostById(postId, {
+  const joke = await jokeService.getJokeById(jokeId, {
     language,
     requesterId: Number.isNaN(requesterId) ? null : requesterId,
     requesterRole,
   });
 
-  if (!post) {
-    return successResponse(res, 404, "No post found", null, 0);
+  if (!joke) {
+    return successResponse(res, 404, "No joke found", null, 0);
   }
 
-  return successResponse(res, 200, "Post retrieved successfully", post, 1);
+  return successResponse(res, 200, "Joke retrieved successfully", joke, 1);
 }
 
-async function createPost(req, res, next) {
+async function createJoke(req, res, next) {
   const language = req.language;
 
   const { title, body, published, tags } = matchedData(req);
@@ -123,7 +123,7 @@ async function createPost(req, res, next) {
 
     await logService.createModerationEvent({
       userId: Number(req.user?.id) || null,
-      action: "create_post",
+      action: "create_joke",
       blocked: true,
       fieldNames: ["title", "body", "tags"],
       matchedTerms,
@@ -145,34 +145,34 @@ async function createPost(req, res, next) {
 
   const normalizedTags = tags ? normalizeTags(tags) : [];
 
-  const createdPost = await postService.createPost(authorId, title, body, published, normalizedTags, {
+  const createdJoke = await jokeService.createJoke(authorId, title, body, published, normalizedTags, {
     language,
   });
 
-  const message = published === true ? "Post was successfully published" : "Post was successfully drafted";
+  const message = published === true ? "Joke was successfully published" : "Joke was successfully drafted";
 
-  if (createdPost?.published) {
+  if (createdJoke?.published) {
     await logService.createProductEvent({
       userId: authorId,
-      type: "POST_PUBLISHED",
+      type: "JOKE_PUBLISHED",
       path: req.originalUrl,
-      language: createdPost.language,
+      language: createdJoke.language,
       metadata: {
-        postId: createdPost.id,
+        jokeId: createdJoke.id,
       },
       ipAddress: req.ip,
       userAgent: req.headers["user-agent"] || null,
     });
   }
 
-  return successResponse(res, 200, message, createdPost, 1);
+  return successResponse(res, 200, message, createdJoke, 1);
 }
 
-async function updatePost(req, res, next) {
+async function updateJoke(req, res, next) {
   const language = req.language;
 
-  const postId = Number(req.params?.id);
-  if (isNaN(postId)) return next(new CustomError(400, "Invalid id given"));
+  const jokeId = Number(req.params?.id);
+  if (isNaN(jokeId)) return next(new CustomError(400, "Invalid id given"));
 
   const { title, body, published, tags } = matchedData(req);
   const normalizedTags = tags ? normalizeTags(tags) : undefined;
@@ -188,7 +188,7 @@ async function updatePost(req, res, next) {
 
     await logService.createModerationEvent({
       userId: Number(req.user?.id) || null,
-      action: "create_post",
+      action: "create_joke",
       blocked: true,
       fieldNames: ["title", "body", "tags"],
       matchedTerms,
@@ -205,8 +205,8 @@ async function updatePost(req, res, next) {
     );
   }
 
-  const updatedPost = await postService.updatePost(
-    postId,
+  const updatedJoke = await jokeService.updateJoke(
+    jokeId,
     { title, body, published, tags: normalizedTags },
     {
       language,
@@ -215,21 +215,21 @@ async function updatePost(req, res, next) {
     },
   );
 
-  if (!updatedPost) return next(new CustomError(404, "Post not found for this language"));
+  if (!updatedJoke) return next(new CustomError(404, "Joke not found for this language"));
 
-  return successResponse(res, 200, "Post was successfully updated", updatedPost, 1);
+  return successResponse(res, 200, "Joke was successfully updated", updatedJoke, 1);
 }
 
-async function deletePost(req, res, next) {
+async function deleteJoke(req, res, next) {
   const language = req.language;
 
-  const postId = Number(req.params?.id);
-  if (isNaN(postId)) return next(new CustomError(400, "Invalid id given"));
+  const jokeId = Number(req.params?.id);
+  if (isNaN(jokeId)) return next(new CustomError(400, "Invalid id given"));
 
-  const deleted = await postService.deletePost(postId, { language });
-  if (!deleted) return next(new CustomError(404, "Post not found for this language"));
+  const deleted = await jokeService.deleteJoke(jokeId, { language });
+  if (!deleted) return next(new CustomError(404, "Joke not found for this language"));
 
-  return successResponse(res, 200, "Post successfully deleted");
+  return successResponse(res, 200, "Joke successfully deleted");
 }
 
 async function getAllDraftsFromCurrentUser(req, res, next) {
@@ -242,7 +242,7 @@ async function getAllDraftsFromCurrentUser(req, res, next) {
   queryParams.tag = queryParams.tag ? normalizeTags(queryParams.tag) : undefined;
   queryParams.published = false;
 
-  const { items, total, page, limit } = await postService.getAllPostsByAuthor(userId, {
+  const { items, total, page, limit } = await jokeService.getAllJokesByAuthor(userId, {
     ...queryParams,
     language,
   });
@@ -259,7 +259,7 @@ async function getAllDrafts(req, res, next) {
   const queryParams = matchedData(req);
   queryParams.tag = queryParams.tag ? normalizeTags(queryParams.tag) : undefined;
 
-  const drafts = await postService.getAllDrafts({ ...queryParams, language });
+  const drafts = await jokeService.getAllDrafts({ ...queryParams, language });
 
   const message = drafts.length > 0 ? "Drafts retrieved successfully" : "No drafts found";
   const data = drafts.length > 0 ? drafts : [];
@@ -271,19 +271,19 @@ async function getAllDrafts(req, res, next) {
 async function publishDraft(req, res, next) {
   const language = req.language;
 
-  const postId = Number(req.params?.id);
-  if (isNaN(postId)) return next(new CustomError(400, "Invalid id given"));
+  const jokeId = Number(req.params?.id);
+  if (isNaN(jokeId)) return next(new CustomError(400, "Invalid id given"));
 
-  const published = await postService.publishDraft(postId, { language });
+  const published = await jokeService.publishDraft(jokeId, { language });
   if (!published) return next(new CustomError(404, "Draft not found for this language"));
 
   await logService.createProductEvent({
     userId: Number(req.user?.id) || null,
-    type: "POST_PUBLISHED",
+    type: "JOKE_PUBLISHED",
     path: req.originalUrl,
     language,
     metadata: {
-      postId,
+      jokeId,
       source: "publish_draft",
     },
     ipAddress: req.ip,
@@ -293,7 +293,7 @@ async function publishDraft(req, res, next) {
   return successResponse(res, 200, "Draft successfully published");
 }
 
-async function searchPosts(req, res, next) {
+async function searchJokes(req, res, next) {
   const language = req.language;
 
   const data = matchedData(req);
@@ -353,7 +353,7 @@ async function searchPosts(req, res, next) {
     total,
     page: currentPage,
     limit: currentLimit,
-  } = await postService.searchPosts(terms, {
+  } = await jokeService.searchJokes(terms, {
     language,
     page: parsedPage,
     limit: parsedLimit,
@@ -367,7 +367,7 @@ async function searchPosts(req, res, next) {
     total,
   });
 
-  const message = items.length > 0 ? "Posts retrieved successfully" : "No posts were found";
+  const message = items.length > 0 ? "Jokes retrieved successfully" : "No jokes were found";
 
   return successResponse(res, 200, message, items, items.length, meta);
 }
@@ -378,23 +378,23 @@ async function toggleLike(req, res, next) {
   const userId = Number(req.user?.id);
   if (isNaN(userId)) return next(new CustomError(401, "Unauthorized"));
 
-  const postId = Number(req.params?.id);
-  if (isNaN(postId)) return next(new CustomError(400, "Invalid id given"));
+  const jokeId = Number(req.params?.id);
+  if (isNaN(jokeId)) return next(new CustomError(400, "Invalid id given"));
 
-  const post = await postService.getPostById(postId, { language, published: true });
-  if (!post) {
-    return next(new CustomError(404, `No post with id ${postId} found for this language`));
+  const joke = await jokeService.getJokeById(jokeId, { language, published: true });
+  if (!joke) {
+    return next(new CustomError(404, `No joke with id ${jokeId} found for this language`));
   }
 
-  const existing = await postService.hasLiked(postId, userId);
+  const existing = await jokeService.hasLiked(jokeId, userId);
 
   if (existing) {
-    await postService.removeLike(postId, userId);
-    return successResponse(res, 200, "Unliked post");
+    await jokeService.removeLike(jokeId, userId);
+    return successResponse(res, 200, "Unliked joke");
   }
 
-  await postService.addLike(postId, userId);
-  return successResponse(res, 201, "Liked post");
+  await jokeService.addLike(jokeId, userId);
+  return successResponse(res, 201, "Liked joke");
 }
 
 async function recordDailyJokeView(req, res, next) {
@@ -452,19 +452,19 @@ async function recordDailyJokeView(req, res, next) {
 }
 
 export default {
-  getAllPostsFromUser,
-  getAllPosts,
-  getPopularPosts,
-  getRandomPost,
-  getDailyPost,
+  getAllJokesFromUser,
+  getAllJokes,
+  getPopularJokes,
+  getRandomJoke,
+  getDailyJoke,
   recordDailyJokeView,
-  getPost,
-  createPost,
-  updatePost,
-  deletePost,
+  getJoke,
+  createJoke,
+  updateJoke,
+  deleteJoke,
   getAllDraftsFromCurrentUser,
   getAllDrafts,
   publishDraft,
-  searchPosts,
+  searchJokes,
   toggleLike,
 };

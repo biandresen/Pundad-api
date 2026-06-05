@@ -7,7 +7,7 @@
 
 function normalizeTags(tags) {
   if (Array.isArray(tags)) {
-    return tags.map((t) => t.trim().toLowerCase()); // if tags are already an array, like when creating a post with tags
+    return tags.map((t) => t.trim().toLowerCase()); // if tags are already an array, like when creating a joke with tags
   }
 
   const containsComma = tags.includes(",");

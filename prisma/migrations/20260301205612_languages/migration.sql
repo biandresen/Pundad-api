@@ -39,10 +39,10 @@ CREATE INDEX "BadgeAward_language_awardedAt_idx" ON "BadgeAward"("language", "aw
 CREATE UNIQUE INDEX "BadgeAward_userId_badge_validFrom_language_key" ON "BadgeAward"("userId", "badge", "validFrom", "language");
 
 -- CreateIndex
-CREATE INDEX "BlogPost_language_published_id_idx" ON "BlogPost"("language", "published", "id");
+CREATE INDEX "Joke_language_published_id_idx" ON "Joke"("language", "published", "id");
 
 -- CreateIndex
-CREATE INDEX "Comment_language_createdAt_postId_idx" ON "Comment"("language", "createdAt", "postId");
+CREATE INDEX "Comment_language_createdAt_jokeId_idx" ON "Comment"("language", "createdAt", "jokeId");
 
 -- CreateIndex
 CREATE INDEX "CurrentUserBadge_userId_language_idx" ON "CurrentUserBadge"("userId", "language");

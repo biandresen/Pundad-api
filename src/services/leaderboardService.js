@@ -80,25 +80,25 @@ export async function getLeaderboardUsers({ language, period = "month", limit = 
   }
 
   /**
-   * Likes received for posts in the selected language.
-   * Language is derived from the related BlogPost.
+   * Likes received for jokes in the selected language.
+   * Language is derived from the related Joke.
    */
-  const likeRows = await prisma.postLike.groupBy({
-    by: ["postId"],
+  const likeRows = await prisma.jokeLike.groupBy({
+    by: ["jokeId"],
     where: {
       ...(timeFilter ? { createdAt: timeFilter } : {}),
-      post: { language: lang },
+      joke: { language: lang },
     },
     _count: { _all: true },
   });
 
-  const likePostIds = likeRows.map((row) => row.postId);
+  const likeJokeIds = likeRows.map((row) => row.jokeId);
 
-  const likePosts =
-    likePostIds.length ?
-      await prisma.blogPost.findMany({
+  const likeJokes =
+    likeJokeIds.length ?
+      await prisma.joke.findMany({
         where: {
-          id: { in: likePostIds },
+          id: { in: likeJokeIds },
           language: lang,
         },
         select: {
@@ -108,36 +108,36 @@ export async function getLeaderboardUsers({ language, period = "month", limit = 
       })
     : [];
 
-  const postIdToAuthor = new Map(likePosts.map((post) => [post.id, post.authorId]));
+  const jokeIdToAuthor = new Map(likeJokes.map((joke) => [joke.id, joke.authorId]));
   const likesByUser = new Map();
 
   for (const row of likeRows) {
-    const authorId = postIdToAuthor.get(row.postId);
+    const authorId = jokeIdToAuthor.get(row.jokeId);
     if (!authorId) continue;
 
     likesByUser.set(authorId, (likesByUser.get(authorId) ?? 0) + row._count._all);
   }
 
   /**
-   * Comments received for posts in the selected language.
-   * Language is derived from the related BlogPost.
+   * Comments received for jokes in the selected language.
+   * Language is derived from the related Joke.
    */
   const commentRows = await prisma.comment.groupBy({
-    by: ["postId"],
+    by: ["jokeId"],
     where: {
       ...(timeFilter ? { createdAt: timeFilter } : {}),
-      post: { language: lang },
+      joke: { language: lang },
     },
     _count: { _all: true },
   });
 
-  const commentPostIds = commentRows.map((row) => row.postId);
+  const commentJokeIds = commentRows.map((row) => row.jokeId);
 
-  const commentPosts =
-    commentPostIds.length ?
-      await prisma.blogPost.findMany({
+  const commentJokes =
+    commentJokeIds.length ?
+      await prisma.joke.findMany({
         where: {
-          id: { in: commentPostIds },
+          id: { in: commentJokeIds },
           language: lang,
         },
         select: {
@@ -147,12 +147,12 @@ export async function getLeaderboardUsers({ language, period = "month", limit = 
       })
     : [];
 
-  const commentPostIdToAuthor = new Map(commentPosts.map((post) => [post.id, post.authorId]));
+  const commentJokeIdToAuthor = new Map(commentJokes.map((joke) => [joke.id, joke.authorId]));
 
   const commentsByUser = new Map();
 
   for (const row of commentRows) {
-    const authorId = commentPostIdToAuthor.get(row.postId);
+    const authorId = commentJokeIdToAuthor.get(row.jokeId);
     if (!authorId) continue;
 
     commentsByUser.set(authorId, (commentsByUser.get(authorId) ?? 0) + row._count._all);

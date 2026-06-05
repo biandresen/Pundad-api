@@ -3,15 +3,15 @@ import { INCLUDED_IN_USER } from "../constants.js";
 import { normalizeLanguage } from "../utils/language.js";
 
 /**
- * Ensures the target post exists in the requested language.
- * This is useful for language-scoped read/create flows tied to a post.
+ * Ensures the target joke exists in the requested language.
+ * This is useful for language-scoped read/create flows tied to a joke.
  */
-async function assertPostInLanguage(postId, language, { published } = {}) {
+async function assertJokeInLanguage(jokeId, language, { published } = {}) {
   const lang = normalizeLanguage(language);
 
-  return prisma.blogPost.findFirst({
+  return prisma.joke.findFirst({
     where: {
-      id: postId,
+      id: jokeId,
       language: lang,
       ...(typeof published === "boolean" ? { published } : {}),
     },
@@ -24,19 +24,19 @@ async function assertPostInLanguage(postId, language, { published } = {}) {
 }
 
 /**
- * Create comment on a published post in the currently selected language.
- * Language is validated through the post, not stored on the comment itself.
+ * Create comment on a published joke in the currently selected language.
+ * Language is validated through the joke, not stored on the comment itself.
  */
-async function createComment(postId, authorId, body, { language } = {}) {
-  const post = await assertPostInLanguage(postId, language, { published: true });
+async function createComment(jokeId, authorId, body, { language } = {}) {
+  const joke = await assertJokeInLanguage(jokeId, language, { published: true });
 
-  if (!post) return null;
+  if (!joke) return null;
 
   return prisma.comment.create({
     data: {
       body,
       authorId,
-      postId,
+      jokeId,
     },
     include: {
       user: { select: INCLUDED_IN_USER },
@@ -45,18 +45,18 @@ async function createComment(postId, authorId, body, { language } = {}) {
 }
 
 /**
- * Get paginated comments for a published post in the current language.
- * We validate the post language once, then fetch comments by postId only.
+ * Get paginated comments for a published joke in the current language.
+ * We validate the joke language once, then fetch comments by jokeId only.
  */
-async function getAllCommentsFromPost(
-  postId,
+async function getAllCommentsFromJoke(
+  jokeId,
   { language, page = 1, limit = 10, sort = "asc" } = {}
 ) {
   const lang = normalizeLanguage(language);
 
-  const post = await assertPostInLanguage(postId, lang, { published: true });
+  const joke = await assertJokeInLanguage(jokeId, lang, { published: true });
 
-  if (!post) {
+  if (!joke) {
     return {
       items: [],
       total: 0,
@@ -71,7 +71,7 @@ async function getAllCommentsFromPost(
   const normalizedSort = sort?.toLowerCase() === "asc" ? "asc" : "desc";
 
   const where = {
-    postId,
+    jokeId,
   };
 
   const [items, total] = await Promise.all([
@@ -152,7 +152,7 @@ async function updateComment(commentId, body) {
 
 export default {
   createComment,
-  getAllCommentsFromPost,
+  getAllCommentsFromJoke,
   getCommentById,
   deleteComment,
   updateComment,

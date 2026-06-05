@@ -101,7 +101,7 @@ async function deleteTag(tagId, { language } = {}) {
 
 /**
  * Popular tags must be per language, and you probably only want tags used by
- * published posts in that language, otherwise drafts skew it.
+ * published jokes in that language, otherwise drafts skew it.
  */
 async function getPopularTags({ language, limit = 10, publishedOnly = true } = {}) {
   const lang = normalizeLanguage(language);
@@ -112,21 +112,21 @@ async function getPopularTags({ language, limit = 10, publishedOnly = true } = {
       language: lang,
       ...(publishedOnly
         ? {
-            posts: {
+            jokes: {
               some: { published: true, language: lang },
             },
           }
         : {}),
     },
     orderBy: {
-      posts: {
+      jokes: {
         _count: "desc",
       },
     },
     take,
     include: {
       _count: {
-        select: { posts: true },
+        select: { jokes: true },
       },
     },
   });

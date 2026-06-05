@@ -1,14 +1,14 @@
 import prisma from "../config/prismaClient.js";
 import { Prisma } from "@prisma/client";
 
-import { FEATURED_POST } from "../constants.js";
+import { FEATURED_JOKE } from "../constants.js";
 import { startOfUtcDay } from "../utils/date.js";
 import { deterministicIndex } from "../utils/deterministicIndex.js";
 import badgeService from "./badgeService.js";
 import { normalizeLanguage } from "../utils/language.js";
 
 /**
- * Base user fields always returned with posts
+ * Base user fields always returned with jokes
  * (language-independent)
  */
 const BASE_USER_SELECT = {
@@ -46,9 +46,9 @@ function buildIncludedUser(language) {
 }
 
 /**
- * Build post include with language-aware author badges
+ * Build joke include with language-aware author badges
  */
-function buildPostInclude(language) {
+function buildJokeInclude(language) {
   const lang = normalizeLanguage(language);
 
   return {
@@ -91,7 +91,7 @@ function uniqueNormalizedTags(tags) {
   return [...set];
 }
 
-async function getAllPosts({ language, page = 1, limit = 15, sort = "asc", tag = null } = {}) {
+async function getAllJokes({ language, page = 1, limit = 15, sort = "asc", tag = null } = {}) {
   const lang = normalizeLanguage(language);
 
   const parsedPage = Math.max(1, parseInt(page) || 1);
@@ -116,14 +116,14 @@ async function getAllPosts({ language, page = 1, limit = 15, sort = "asc", tag =
   };
 
   const [items, total] = await Promise.all([
-    prisma.blogPost.findMany({
+    prisma.joke.findMany({
       where,
       orderBy,
       skip,
       take: parsedLimit,
-      include: buildPostInclude(lang),
+      include: buildJokeInclude(lang),
     }),
-    prisma.blogPost.count({ where }),
+    prisma.joke.count({ where }),
   ]);
 
   return { items, total, page: parsedPage, limit: parsedLimit, language: lang };
@@ -136,7 +136,7 @@ async function getAllDrafts({ language, page = 1, limit = 100, sort = "desc", ta
   const parsedLimit = Math.max(1, parseInt(limit) || 100);
   const skip = (parsedPage - 1) * parsedLimit;
 
-  return prisma.blogPost.findMany({
+  return prisma.joke.findMany({
     where: {
       language: lang,
       published: false,
@@ -162,7 +162,7 @@ async function getAllDrafts({ language, page = 1, limit = 100, sort = "desc", ta
   });
 }
 
-async function getAllPostsByAuthor(
+async function getAllJokesByAuthor(
   authorId,
   { language, page = 1, limit = 15, sort = "desc", tag = null, published = true } = {},
 ) {
@@ -188,54 +188,54 @@ async function getAllPostsByAuthor(
   };
 
   const [items, total] = await Promise.all([
-    prisma.blogPost.findMany({
+    prisma.joke.findMany({
       where,
       orderBy,
       skip,
       take: parsedLimit,
-      include: buildPostInclude(lang),
+      include: buildJokeInclude(lang),
     }),
-    prisma.blogPost.count({ where }),
+    prisma.joke.count({ where }),
   ]);
 
   return { items, total, page: parsedPage, limit: parsedLimit, language: lang };
 }
 
-async function getPostById(postId, { language, requesterId = null, requesterRole = null } = {}) {
+async function getJokeById(jokeId, { language, requesterId = null, requesterRole = null } = {}) {
   const lang = normalizeLanguage(language);
 
-  const post = await prisma.blogPost.findFirst({
+  const joke = await prisma.joke.findFirst({
     where: {
-      id: postId,
+      id: jokeId,
       language: lang,
     },
-    include: buildPostInclude(lang),
+    include: buildJokeInclude(lang),
   });
 
-  if (!post) return null;
+  if (!joke) return null;
 
-  // Public post
-  if (post.published) {
-    return post;
+  // Public joke
+  if (joke.published) {
+    return joke;
   }
 
   // Draft visible to author
-  if (requesterId != null && post.authorId === requesterId) {
-    return post;
+  if (requesterId != null && joke.authorId === requesterId) {
+    return joke;
   }
 
   // Draft visible to admin
   if (requesterRole === "ADMIN") {
-    return post;
+    return joke;
   }
 
   return null;
 }
 
-async function getRandomPost({ language } = {}) {
+async function getRandomJoke({ language } = {}) {
   const lang = normalizeLanguage(language);
 
-  const count = await prisma.blogPost.count({
+  const count = await prisma.joke.count({
     where: { language: lang, published: true },
   });
 
@@ -243,38 +243,38 @@ async function getRandomPost({ language } = {}) {
 
   const skip = Math.floor(Math.random() * count);
 
-  const [post] = await prisma.blogPost.findMany({
+  const [joke] = await prisma.joke.findMany({
     where: { language: lang, published: true },
     orderBy: { id: "asc" },
     skip,
     take: 1,
-    include: buildPostInclude(lang),
+    include: buildJokeInclude(lang),
   });
 
-  return post ?? null;
+  return joke ?? null;
 }
 
-async function getDailyPost({ language } = {}) {
+async function getDailyJoke({ language } = {}) {
   const lang = normalizeLanguage(language);
   const dayUtc = startOfUtcDay(new Date());
 
-  const existing = await prisma.featuredPost.findUnique({
+  const existing = await prisma.featuredJoke.findUnique({
     where: {
       type_date_language: {
-        type: FEATURED_POST.DAILY,
+        type: FEATURED_JOKE.DAILY,
         date: dayUtc,
         language: lang,
       },
     },
-    select: { postId: true },
+    select: { jokeId: true },
   });
 
-  if (!existing?.postId) return null;
+  if (!existing?.jokeId) return null;
 
-  return getPostById(existing.postId, { language: lang, published: true });
+  return getJokeById(existing.jokeId, { language: lang, published: true });
 }
 
-async function createPost(
+async function createJoke(
   authorId,
   title = "Title",
   body = "Body...",
@@ -285,7 +285,7 @@ async function createPost(
   const lang = normalizeLanguage(language);
   const normalizedTags = uniqueNormalizedTags(tags);
 
-  return prisma.blogPost.create({
+  return prisma.joke.create({
     data: {
       authorId,
       language: lang,
@@ -306,15 +306,15 @@ async function createPost(
   });
 }
 
-async function updatePost(
-  postId,
+async function updateJoke(
+  jokeId,
   { title, body, published, tags },
   { language, requesterId = null, requesterRole = null } = {},
 ) {
   const lang = normalizeLanguage(language);
 
-  const existing = await prisma.blogPost.findUnique({
-    where: { id: Number(postId) },
+  const existing = await prisma.joke.findUnique({
+    where: { id: Number(jokeId) },
     select: { id: true, language: true },
   });
 
@@ -345,69 +345,69 @@ async function updatePost(
     };
   }
 
-  await prisma.blogPost.update({
-    where: { id: Number(postId) },
+  await prisma.joke.update({
+    where: { id: Number(jokeId) },
     data: updateData,
   });
 
-  return getPostById(postId, {
+  return getJokeById(jokeId, {
     language: lang,
     requesterId,
     requesterRole,
   });
 }
 
-async function deletePost(postId, { language } = {}) {
+async function deleteJoke(jokeId, { language } = {}) {
   const lang = normalizeLanguage(language);
 
   // Use deleteMany for language-scoped delete
-  const deleted = await prisma.blogPost.deleteMany({
-    where: { id: postId, language: lang },
+  const deleted = await prisma.joke.deleteMany({
+    where: { id: jokeId, language: lang },
   });
 
   return deleted.count > 0;
 }
 
-async function publishDraft(postId, { language } = {}) {
+async function publishDraft(jokeId, { language } = {}) {
   const lang = normalizeLanguage(language);
 
-  const updated = await prisma.blogPost.updateMany({
-    where: { id: postId, language: lang, published: false },
+  const updated = await prisma.joke.updateMany({
+    where: { id: jokeId, language: lang, published: false },
     data: { published: true },
   });
 
   return updated.count > 0;
 }
 
-async function addLike(postId, userId) {
-  return prisma.postLike.create({
+async function addLike(jokeId, userId) {
+  return prisma.jokeLike.create({
     data: {
-      postId,
+      jokeId,
       userId,
     },
   });
 }
 
-async function removeLike(postId, userId) {
-  return prisma.postLike.deleteMany({
+async function removeLike(jokeId, userId) {
+  return prisma.jokeLike.deleteMany({
     where: {
-      postId,
+      jokeId,
       userId,
     },
   });
 }
-async function hasLiked(postId, userId) {
-  return prisma.postLike.findUnique({
+async function hasLiked(jokeId, userId) {
+  return prisma.jokeLike.findUnique({
     where: {
-      postId_userId: {
-        postId,
+      jokeId_userId: {
+        jokeId,
         userId,
       },
     },
   });
 }
 
-async function searchPosts(
+async function searchJokes(
   searchParameters,
   {
     language,
@@ -501,14 +501,14 @@ async function searchPosts(
   const normalizedSort = sort?.toLowerCase() === "asc" ? "asc" : "desc";
 
   const [items, total] = await Promise.all([
-    prisma.blogPost.findMany({
+    prisma.joke.findMany({
       where,
       orderBy: { createdAt: normalizedSort },
       skip,
       take: parsedLimit,
-      include: buildPostInclude(lang),
+      include: buildJokeInclude(lang),
     }),
-    prisma.blogPost.count({ where }),
+    prisma.joke.count({ where }),
   ]);
 
   return {
@@ -520,11 +520,11 @@ async function searchPosts(
   };
 }
 
-async function getPopularPosts({ language, limit = 10, tag = null } = {}) {
+async function getPopularJokes({ language, limit = 10, tag = null } = {}) {
   const lang = normalizeLanguage(language);
   const parsedLimit = Math.max(1, parseInt(limit) || 10);
 
-  return prisma.blogPost.findMany({
+  return prisma.joke.findMany({
     where: {
       language: lang,
       published: true,
@@ -538,25 +538,25 @@ async function getPopularPosts({ language, limit = 10, tag = null } = {}) {
     },
     orderBy: [{ likes: { _count: "desc" } }, { createdAt: "desc" }],
     take: parsedLimit,
-    include: buildPostInclude(lang),
+    include: buildJokeInclude(lang),
   });
 }
 
 export default {
   // Reads
-  getAllPosts,
+  getAllJokes,
   getAllDrafts,
-  getAllPostsByAuthor,
-  getPostById,
-  getRandomPost,
-  getDailyPost,
-  searchPosts,
-  getPopularPosts,
+  getAllJokesByAuthor,
+  getJokeById,
+  getRandomJoke,
+  getDailyJoke,
+  searchJokes,
+  getPopularJokes,
 
   // Writes
-  createPost,
-  updatePost,
-  deletePost,
+  createJoke,
+  updateJoke,
+  deleteJoke,
   publishDraft,
   addLike,
   removeLike,

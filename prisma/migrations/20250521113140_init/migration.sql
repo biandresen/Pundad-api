@@ -17,7 +17,7 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
-CREATE TABLE "BlogPost" (
+CREATE TABLE "Joke" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
     "title" TEXT NOT NULL,
@@ -26,14 +26,14 @@ CREATE TABLE "BlogPost" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "changedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "BlogPost_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Joke_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Comment" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
-    "postId" INTEGER NOT NULL,
+    "jokeId" INTEGER NOT NULL,
     "body" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "changedAt" TIMESTAMP(3) NOT NULL,
@@ -65,11 +65,11 @@ CREATE TABLE "RefreshToken" (
 );
 
 -- CreateTable
-CREATE TABLE "_PostTags" (
+CREATE TABLE "_JokeTags" (
     "A" INTEGER NOT NULL,
     "B" INTEGER NOT NULL,
 
-    CONSTRAINT "_PostTags_AB_pkey" PRIMARY KEY ("A","B")
+    CONSTRAINT "_JokeTags_AB_pkey" PRIMARY KEY ("A","B")
 );
 
 -- CreateIndex
@@ -82,22 +82,22 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 CREATE UNIQUE INDEX "Tag_name_key" ON "Tag"("name");
 
 -- CreateIndex
-CREATE INDEX "_PostTags_B_index" ON "_PostTags"("B");
+CREATE INDEX "_JokeTags_B_index" ON "_JokeTags"("B");
 
 -- AddForeignKey
-ALTER TABLE "BlogPost" ADD CONSTRAINT "BlogPost_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Joke" ADD CONSTRAINT "Joke_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Comment" ADD CONSTRAINT "Comment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Comment" ADD CONSTRAINT "Comment_postId_fkey" FOREIGN KEY ("postId") REFERENCES "BlogPost"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Comment" ADD CONSTRAINT "Comment_jokeId_fkey" FOREIGN KEY ("jokeId") REFERENCES "Joke"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RefreshToken" ADD CONSTRAINT "RefreshToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_PostTags" ADD CONSTRAINT "_PostTags_A_fkey" FOREIGN KEY ("A") REFERENCES "BlogPost"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_JokeTags" ADD CONSTRAINT "_JokeTags_A_fkey" FOREIGN KEY ("A") REFERENCES "Joke"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_PostTags" ADD CONSTRAINT "_PostTags_B_fkey" FOREIGN KEY ("B") REFERENCES "Tag"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_JokeTags" ADD CONSTRAINT "_JokeTags_B_fkey" FOREIGN KEY ("B") REFERENCES "Tag"("id") ON DELETE CASCADE ON UPDATE CASCADE;

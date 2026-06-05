@@ -23,7 +23,7 @@ function requestLogger(req, res, next) {
       path.startsWith("/api/v1/auth") ||
       path.startsWith("/api/v1/moderation") ||
       path.startsWith("/api/v1/user") ||
-      path.startsWith("/api/v1/posts/daily/view");
+      path.startsWith("/api/v1/jokes/daily/view");
 
     const isWriteMethod = method === "POST" || method === "PATCH" || method === "DELETE";
 

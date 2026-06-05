@@ -1,7 +1,7 @@
 import { body } from "express-validator";
 import { MAX_CHARS } from "../constants.js";
 
-const newPostValidator = [
+const newJokeValidator = [
   body("title")
   .notEmpty().withMessage("Title cannot be empty")
   .trim()
@@ -25,4 +25,4 @@ const newPostValidator = [
   body("published").optional().isBoolean().withMessage("Published must be a boolean").toBoolean(),
 ];
 
-export default newPostValidator;
+export default newJokeValidator;

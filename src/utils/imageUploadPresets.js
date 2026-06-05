@@ -21,8 +21,8 @@ export const imagePresets = {
     },
   },
 
-  // postImage: {
-  //   folder: "uploads/posts",
+  // jokeImage: {
+  //   folder: "uploads/jokes",
   //   maxBytes: 4 * 1024 * 1024, // make this higher later if desired
   //   maxInputBytes: 12 * 1024 * 1024,
   //   maxWidth: 1600, // keep detail but prevent gigantic images

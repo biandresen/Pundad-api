@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../config/prismaClient.js";
-import { FEATURED_POST } from "../constants.js";
+import { FEATURED_JOKE } from "../constants.js";
 import badgeService from "./badgeService.js";
 import logger from "../config/logger.js";
 import {
@@ -12,7 +12,7 @@ import {
   addUtcHours,
   startOfUtcDay
 } from "../utils/date.js";
-import postService from "./postService.js";
+import jokeService from "./jokeService.js";
 import { normalizeLanguage } from "../utils/language.js";
 
 function deterministicIndex(dayUtc, total) {
@@ -28,48 +28,48 @@ export async function computeDailyJoke({ language } = {}) {
     new Date(dayUtc.getTime() - 24 * 60 * 60 * 1000)
   );
 
-  const existing = await prisma.featuredPost.findUnique({
+  const existing = await prisma.featuredJoke.findUnique({
     where: {
       type_date_language: {
-        type: FEATURED_POST.DAILY,
+        type: FEATURED_JOKE.DAILY,
         date: dayUtc,
         language: lang,
       },
     },
-    select: { postId: true },
+    select: { jokeId: true },
   });
 
-  if (existing?.postId) {
+  if (existing?.jokeId) {
     logger.info(
       {
         event: "featured_compute_skipped_existing",
-        featureType: FEATURED_POST.DAILY,
+        featureType: FEATURED_JOKE.DAILY,
         language: lang,
         date: dayUtc,
-        postId: existing.postId,
+        jokeId: existing.jokeId,
       },
       "Daily joke already computed"
     );
 
     return {
       status: "already_exists",
-      postId: existing.postId,
+      jokeId: existing.jokeId,
       language: lang,
     };
   }
 
-  const yesterday = await prisma.featuredPost.findUnique({
+  const yesterday = await prisma.featuredJoke.findUnique({
     where: {
       type_date_language: {
-        type: FEATURED_POST.DAILY,
+        type: FEATURED_JOKE.DAILY,
         date: yesterdayUtc,
         language: lang,
       },
     },
-    select: { postId: true },
+    select: { jokeId: true },
   });
 
-  const yesterdayPostId = yesterday?.postId ?? null;
+  const yesterdayJokeId = yesterday?.jokeId ?? null;
 
   const whereBase = {
     language: lang,
@@ -77,25 +77,25 @@ export async function computeDailyJoke({ language } = {}) {
   };
 
   const whereExcludingYesterday =
-    yesterdayPostId != null
-      ? { ...whereBase, id: { not: yesterdayPostId } }
+    yesterdayJokeId != null
+      ? { ...whereBase, id: { not: yesterdayJokeId } }
       : whereBase;
 
-  const totalExcl = await prisma.blogPost.count({
+  const totalExcl = await prisma.joke.count({
     where: whereExcludingYesterday,
   });
 
-  const canExcludeYesterday = yesterdayPostId != null && totalExcl > 0;
+  const canExcludeYesterday = yesterdayJokeId != null && totalExcl > 0;
   const finalWhere = canExcludeYesterday ? whereExcludingYesterday : whereBase;
   const total = canExcludeYesterday
     ? totalExcl
-    : await prisma.blogPost.count({ where: whereBase });
+    : await prisma.joke.count({ where: whereBase });
 
   if (total === 0) {
     logger.info(
       {
         event: "featured_compute_no_winner",
-        featureType: FEATURED_POST.DAILY,
+        featureType: FEATURED_JOKE.DAILY,
         language: lang,
         date: dayUtc,
       },
@@ -104,14 +104,14 @@ export async function computeDailyJoke({ language } = {}) {
 
     return {
       status: "no_winner",
-      postId: null,
+      jokeId: null,
       language: lang,
     };
   }
 
   const index = deterministicIndex(dayUtc, total);
 
-  const picked = await prisma.blogPost.findMany({
+  const picked = await prisma.joke.findMany({
     where: finalWhere,
     orderBy: { id: "asc" },
     skip: index,
@@ -119,40 +119,40 @@ export async function computeDailyJoke({ language } = {}) {
     select: { id: true, authorId: true },
   });
 
-  const post = picked[0];
-  if (!post) {
+  const joke = picked[0];
+  if (!joke) {
     logger.warn(
       {
         event: "featured_compute_missing_pick",
-        featureType: FEATURED_POST.DAILY,
+        featureType: FEATURED_JOKE.DAILY,
         language: lang,
         date: dayUtc,
         index,
         total,
       },
-      "Daily joke selection produced no post"
+      "Daily joke selection produced no joke"
     );
 
     return {
       status: "missing_pick",
-      postId: null,
+      jokeId: null,
       language: lang,
     };
   }
 
   try {
-    await prisma.featuredPost.create({
+    await prisma.featuredJoke.create({
       data: {
-        type: FEATURED_POST.DAILY,
+        type: FEATURED_JOKE.DAILY,
         date: dayUtc,
-        postId: post.id,
+        jokeId: joke.id,
         language: lang,
       },
     });
 
     await badgeService.awardJokeOfTheDayToAuthor({
-      authorId: post.authorId,
-      postId: post.id,
+      authorId: joke.authorId,
+      jokeId: joke.id,
       dayUtc,
       language: lang,
     });
@@ -160,19 +160,19 @@ export async function computeDailyJoke({ language } = {}) {
     logger.info(
       {
         event: "featured_compute_created",
-        featureType: FEATURED_POST.DAILY,
+        featureType: FEATURED_JOKE.DAILY,
         language: lang,
         date: dayUtc,
-        postId: post.id,
-        authorId: post.authorId,
+        jokeId: joke.id,
+        authorId: joke.authorId,
       },
       "Daily joke computed and badge awarded"
     );
 
     return {
       status: "created",
-      postId: post.id,
-      authorId: post.authorId,
+      jokeId: joke.id,
+      authorId: joke.authorId,
       language: lang,
     };
   } catch (e) {
@@ -180,17 +180,17 @@ export async function computeDailyJoke({ language } = {}) {
       logger.warn(
         {
           event: "featured_compute_race_condition",
-          featureType: FEATURED_POST.DAILY,
+          featureType: FEATURED_JOKE.DAILY,
           language: lang,
           date: dayUtc,
-          postId: post.id,
+          jokeId: joke.id,
         },
         "Daily joke already created by another concurrent process"
       );
 
       return {
         status: "duplicate_race",
-        postId: post.id,
+        jokeId: joke.id,
         language: lang,
       };
     }
@@ -205,37 +205,37 @@ export async function computeTopCreatorThisMonth({ language } = {}) {
   const monthStartUtc = startOfUtcMonth(new Date());
   const monthEndUtc = addUtcMonths(monthStartUtc, 1);
 
-  const existing = await prisma.featuredPost.findUnique({
+  const existing = await prisma.featuredJoke.findUnique({
     where: {
       type_date_language: {
-        type: FEATURED_POST.TOP_CREATOR_MONTH,
+        type: FEATURED_JOKE.TOP_CREATOR_MONTH,
         date: monthStartUtc,
         language: lang,
       },
     },
-    select: { postId: true },
+    select: { jokeId: true },
   });
 
-  if (existing?.postId) {
+  if (existing?.jokeId) {
     logger.info(
       {
         event: "featured_compute_skipped_existing",
-        featureType: FEATURED_POST.TOP_CREATOR_MONTH,
+        featureType: FEATURED_JOKE.TOP_CREATOR_MONTH,
         language: lang,
         date: monthStartUtc,
-        postId: existing.postId,
+        jokeId: existing.jokeId,
       },
       "Top creator month already computed"
     );
 
     return {
       status: "already_exists",
-      postId: existing.postId,
+      jokeId: existing.jokeId,
       language: lang,
     };
   }
 
-  const rows = await prisma.blogPost.groupBy({
+  const rows = await prisma.joke.groupBy({
     by: ["authorId"],
     where: {
       language: lang,
@@ -248,13 +248,13 @@ export async function computeTopCreatorThisMonth({ language } = {}) {
   });
 
   const winnerAuthorId = rows[0]?.authorId ?? null;
-  const postCount = rows[0]?._count?.id ?? 0;
+  const jokeCount = rows[0]?._count?.id ?? 0;
 
-  if (!winnerAuthorId || postCount === 0) {
+  if (!winnerAuthorId || jokeCount === 0) {
     logger.info(
       {
         event: "featured_compute_no_winner",
-        featureType: FEATURED_POST.TOP_CREATOR_MONTH,
+        featureType: FEATURED_JOKE.TOP_CREATOR_MONTH,
         language: lang,
         date: monthStartUtc,
       },
@@ -263,12 +263,12 @@ export async function computeTopCreatorThisMonth({ language } = {}) {
 
     return {
       status: "no_winner",
-      postId: null,
+      jokeId: null,
       language: lang,
     };
   }
 
-  const latest = await prisma.blogPost.findFirst({
+  const latest = await prisma.joke.findFirst({
     where: {
       language: lang,
       authorId: winnerAuthorId,
@@ -282,27 +282,27 @@ export async function computeTopCreatorThisMonth({ language } = {}) {
   if (!latest?.id) {
     logger.warn(
       {
-        event: "featured_compute_missing_representative_post",
-        featureType: FEATURED_POST.TOP_CREATOR_MONTH,
+        event: "featured_compute_missing_representative_joke",
+        featureType: FEATURED_JOKE.TOP_CREATOR_MONTH,
         language: lang,
         winnerAuthorId,
       },
-      "Winner author had no representative post"
+      "Winner author had no representative joke"
     );
 
     return {
-      status: "missing_representative_post",
-      postId: null,
+      status: "missing_representative_joke",
+      jokeId: null,
       language: lang,
     };
   }
 
   try {
-    await prisma.featuredPost.create({
+    await prisma.featuredJoke.create({
       data: {
-        type: FEATURED_POST.TOP_CREATOR_MONTH,
+        type: FEATURED_JOKE.TOP_CREATOR_MONTH,
         date: monthStartUtc,
-        postId: latest.id,
+        jokeId: latest.id,
         language: lang,
       },
     });
@@ -311,29 +311,29 @@ export async function computeTopCreatorThisMonth({ language } = {}) {
       userId: winnerAuthorId,
       monthStartUtc,
       monthEndUtc,
-      postCount,
-      context: { postId: latest.id, language: lang },
+      jokeCount,
+      context: { jokeId: latest.id, language: lang },
       language: lang,
     });
 
     logger.info(
       {
         event: "featured_compute_created",
-        featureType: FEATURED_POST.TOP_CREATOR_MONTH,
+        featureType: FEATURED_JOKE.TOP_CREATOR_MONTH,
         language: lang,
         date: monthStartUtc,
-        postId: latest.id,
+        jokeId: latest.id,
         winnerAuthorId,
-        postCount,
+        jokeCount,
       },
       "Top creator month computed and badge awarded"
     );
 
     return {
       status: "created",
-      postId: latest.id,
+      jokeId: latest.id,
       winnerAuthorId,
-      postCount,
+      jokeCount,
       language: lang,
     };
   } catch (e) {
@@ -341,17 +341,17 @@ export async function computeTopCreatorThisMonth({ language } = {}) {
       logger.warn(
         {
           event: "featured_compute_race_condition",
-          featureType: FEATURED_POST.TOP_CREATOR_MONTH,
+          featureType: FEATURED_JOKE.TOP_CREATOR_MONTH,
           language: lang,
           date: monthStartUtc,
-          postId: latest.id,
+          jokeId: latest.id,
         },
         "Top creator month already created by another concurrent process"
       );
 
       return {
         status: "duplicate_race",
-        postId: latest.id,
+        jokeId: latest.id,
         language: lang,
       };
     }
@@ -366,57 +366,57 @@ export async function computeMostCommentedThisWeek({ language } = {}) {
   const weekStartUtc = startOfUtcWeek(new Date());
   const weekEndUtc = addUtcDays(weekStartUtc, 7);
 
-  const existing = await prisma.featuredPost.findUnique({
+  const existing = await prisma.featuredJoke.findUnique({
     where: {
       type_date_language: {
-        type: FEATURED_POST.MOST_COMMENTED_WEEK,
+        type: FEATURED_JOKE.MOST_COMMENTED_WEEK,
         date: weekStartUtc,
         language: lang,
       },
     },
-    select: { postId: true },
+    select: { jokeId: true },
   });
 
-  if (existing?.postId) {
+  if (existing?.jokeId) {
     logger.info(
       {
         event: "featured_compute_skipped_existing",
-        featureType: FEATURED_POST.MOST_COMMENTED_WEEK,
+        featureType: FEATURED_JOKE.MOST_COMMENTED_WEEK,
         language: lang,
         date: weekStartUtc,
-        postId: existing.postId,
+        jokeId: existing.jokeId,
       },
       "Most commented week already computed"
     );
 
     return {
       status: "already_exists",
-      postId: existing.postId,
+      jokeId: existing.jokeId,
       language: lang,
     };
   }
 
   const commentWhere = {
     createdAt: { gte: weekStartUtc, lt: weekEndUtc },
-    post: { published: true, language: lang },
+    joke: { published: true, language: lang },
   };
 
   const rows = await prisma.comment.groupBy({
-    by: ["postId"],
+    by: ["jokeId"],
     where: commentWhere,
     _count: { id: true },
     orderBy: { _count: { id: "desc" } },
     take: 1,
   });
 
-  const winnerPostId = rows[0]?.postId ?? null;
+  const winnerJokeId = rows[0]?.jokeId ?? null;
   const commentCount = rows[0]?._count?.id ?? 0;
 
-  if (!winnerPostId || commentCount === 0) {
+  if (!winnerJokeId || commentCount === 0) {
     logger.info(
       {
         event: "featured_compute_no_winner",
-        featureType: FEATURED_POST.MOST_COMMENTED_WEEK,
+        featureType: FEATURED_JOKE.MOST_COMMENTED_WEEK,
         language: lang,
         date: weekStartUtc,
       },
@@ -425,48 +425,48 @@ export async function computeMostCommentedThisWeek({ language } = {}) {
 
     return {
       status: "no_winner",
-      postId: null,
+      jokeId: null,
       language: lang,
     };
   }
 
-  const winnerPost = await prisma.blogPost.findFirst({
-    where: { id: winnerPostId, language: lang },
+  const winnerJoke = await prisma.joke.findFirst({
+    where: { id: winnerJokeId, language: lang },
     select: { id: true, authorId: true },
   });
 
-  if (!winnerPost) {
+  if (!winnerJoke) {
     logger.warn(
       {
-        event: "featured_compute_missing_post",
-        featureType: FEATURED_POST.MOST_COMMENTED_WEEK,
+        event: "featured_compute_missing_joke",
+        featureType: FEATURED_JOKE.MOST_COMMENTED_WEEK,
         language: lang,
         date: weekStartUtc,
-        winnerPostId,
+        winnerJokeId,
       },
-      "Most commented week winner post not found"
+      "Most commented week winner joke not found"
     );
 
     return {
-      status: "missing_post",
-      postId: null,
+      status: "missing_joke",
+      jokeId: null,
       language: lang,
     };
   }
 
   try {
-    await prisma.featuredPost.create({
+    await prisma.featuredJoke.create({
       data: {
-        type: FEATURED_POST.MOST_COMMENTED_WEEK,
+        type: FEATURED_JOKE.MOST_COMMENTED_WEEK,
         date: weekStartUtc,
-        postId: winnerPost.id,
+        jokeId: winnerJoke.id,
         language: lang,
       },
     });
 
     await badgeService.awardMostCommentedWeekToAuthor({
-      authorId: winnerPost.authorId,
-      postId: winnerPost.id,
+      authorId: winnerJoke.authorId,
+      jokeId: winnerJoke.id,
       weekStartUtc,
       weekEndUtc,
       commentCount,
@@ -476,11 +476,11 @@ export async function computeMostCommentedThisWeek({ language } = {}) {
     logger.info(
       {
         event: "featured_compute_created",
-        featureType: FEATURED_POST.MOST_COMMENTED_WEEK,
+        featureType: FEATURED_JOKE.MOST_COMMENTED_WEEK,
         language: lang,
         date: weekStartUtc,
-        postId: winnerPost.id,
-        authorId: winnerPost.authorId,
+        jokeId: winnerJoke.id,
+        authorId: winnerJoke.authorId,
         commentCount,
       },
       "Most commented week computed and badge awarded"
@@ -488,8 +488,8 @@ export async function computeMostCommentedThisWeek({ language } = {}) {
 
     return {
       status: "created",
-      postId: winnerPost.id,
-      authorId: winnerPost.authorId,
+      jokeId: winnerJoke.id,
+      authorId: winnerJoke.authorId,
       commentCount,
       language: lang,
     };
@@ -498,17 +498,17 @@ export async function computeMostCommentedThisWeek({ language } = {}) {
       logger.warn(
         {
           event: "featured_compute_race_condition",
-          featureType: FEATURED_POST.MOST_COMMENTED_WEEK,
+          featureType: FEATURED_JOKE.MOST_COMMENTED_WEEK,
           language: lang,
           date: weekStartUtc,
-          postId: winnerPost.id,
+          jokeId: winnerJoke.id,
         },
         "Most commented week already created by another concurrent process"
       );
 
       return {
         status: "duplicate_race",
-        postId: winnerPost.id,
+        jokeId: winnerJoke.id,
         language: lang,
       };
     }
@@ -523,57 +523,57 @@ export async function computeTrendingThisWeek({ language } = {}) {
   const weekStartUtc = startOfUtcWeek(new Date());
   const weekEndUtc = addUtcDays(weekStartUtc, 7);
 
-  const existing = await prisma.featuredPost.findUnique({
+  const existing = await prisma.featuredJoke.findUnique({
     where: {
       type_date_language: {
-        type: FEATURED_POST.TRENDING_WEEK,
+        type: FEATURED_JOKE.TRENDING_WEEK,
         date: weekStartUtc,
         language: lang,
       },
     },
-    select: { postId: true },
+    select: { jokeId: true },
   });
 
-  if (existing?.postId) {
+  if (existing?.jokeId) {
     logger.info(
       {
         event: "featured_compute_skipped_existing",
-        featureType: FEATURED_POST.TRENDING_WEEK,
+        featureType: FEATURED_JOKE.TRENDING_WEEK,
         language: lang,
         date: weekStartUtc,
-        postId: existing.postId,
+        jokeId: existing.jokeId,
       },
       "Trending week already computed"
     );
 
     return {
       status: "already_exists",
-      postId: existing.postId,
+      jokeId: existing.jokeId,
       language: lang,
     };
   }
 
   const likeWhere = {
     createdAt: { gte: weekStartUtc, lt: weekEndUtc },
-    post: { published: true, language: lang },
+    joke: { published: true, language: lang },
   };
 
-  const rows = await prisma.postLike.groupBy({
-    by: ["postId"],
+  const rows = await prisma.jokeLike.groupBy({
+    by: ["jokeId"],
     where: likeWhere,
-    _count: { postId: true },
-    orderBy: { _count: { postId: "desc" } },
+    _count: { jokeId: true },
+    orderBy: { _count: { jokeId: "desc" } },
     take: 1,
   });
 
-  const winnerPostId = rows[0]?.postId ?? null;
-  const likeCount = rows[0]?._count?.postId ?? 0;
+  const winnerJokeId = rows[0]?.jokeId ?? null;
+  const likeCount = rows[0]?._count?.jokeId ?? 0;
 
-  if (!winnerPostId || likeCount === 0) {
+  if (!winnerJokeId || likeCount === 0) {
     logger.info(
       {
         event: "featured_compute_no_winner",
-        featureType: FEATURED_POST.TRENDING_WEEK,
+        featureType: FEATURED_JOKE.TRENDING_WEEK,
         language: lang,
         date: weekStartUtc,
       },
@@ -582,48 +582,48 @@ export async function computeTrendingThisWeek({ language } = {}) {
 
     return {
       status: "no_winner",
-      postId: null,
+      jokeId: null,
       language: lang,
     };
   }
 
-  const winnerPost = await prisma.blogPost.findFirst({
-    where: { id: winnerPostId, language: lang },
+  const winnerJoke = await prisma.joke.findFirst({
+    where: { id: winnerJokeId, language: lang },
     select: { id: true, authorId: true },
   });
 
-  if (!winnerPost) {
+  if (!winnerJoke) {
     logger.warn(
       {
-        event: "featured_compute_missing_post",
-        featureType: FEATURED_POST.TRENDING_WEEK,
+        event: "featured_compute_missing_joke",
+        featureType: FEATURED_JOKE.TRENDING_WEEK,
         language: lang,
         date: weekStartUtc,
-        winnerPostId,
+        winnerJokeId,
       },
-      "Trending week winner post not found"
+      "Trending week winner joke not found"
     );
 
     return {
-      status: "missing_post",
-      postId: null,
+      status: "missing_joke",
+      jokeId: null,
       language: lang,
     };
   }
 
   try {
-    await prisma.featuredPost.create({
+    await prisma.featuredJoke.create({
       data: {
-        type: FEATURED_POST.TRENDING_WEEK,
+        type: FEATURED_JOKE.TRENDING_WEEK,
         date: weekStartUtc,
-        postId: winnerPost.id,
+        jokeId: winnerJoke.id,
         language: lang,
       },
     });
 
     await badgeService.awardTrendingWeekToAuthor({
-      authorId: winnerPost.authorId,
-      postId: winnerPost.id,
+      authorId: winnerJoke.authorId,
+      jokeId: winnerJoke.id,
       weekStartUtc,
       weekEndUtc,
       likeCount,
@@ -633,11 +633,11 @@ export async function computeTrendingThisWeek({ language } = {}) {
     logger.info(
       {
         event: "featured_compute_created",
-        featureType: FEATURED_POST.TRENDING_WEEK,
+        featureType: FEATURED_JOKE.TRENDING_WEEK,
         language: lang,
         date: weekStartUtc,
-        postId: winnerPost.id,
-        authorId: winnerPost.authorId,
+        jokeId: winnerJoke.id,
+        authorId: winnerJoke.authorId,
         likeCount,
       },
       "Trending week computed and badge awarded"
@@ -645,8 +645,8 @@ export async function computeTrendingThisWeek({ language } = {}) {
 
     return {
       status: "created",
-      postId: winnerPost.id,
-      authorId: winnerPost.authorId,
+      jokeId: winnerJoke.id,
+      authorId: winnerJoke.authorId,
       likeCount,
       language: lang,
     };
@@ -655,17 +655,17 @@ export async function computeTrendingThisWeek({ language } = {}) {
       logger.warn(
         {
           event: "featured_compute_race_condition",
-          featureType: FEATURED_POST.TRENDING_WEEK,
+          featureType: FEATURED_JOKE.TRENDING_WEEK,
           language: lang,
           date: weekStartUtc,
-          postId: winnerPost.id,
+          jokeId: winnerJoke.id,
         },
         "Trending week already created by another concurrent process"
       );
 
       return {
         status: "duplicate_race",
-        postId: winnerPost.id,
+        jokeId: winnerJoke.id,
         language: lang,
       };
     }
@@ -683,57 +683,57 @@ export async function computeFastestGrowing24h({ language } = {}) {
   const validFromUtc = hourKeyUtc;
   const validToUtc = addUtcHours(hourKeyUtc, 24);
 
-  const existing = await prisma.featuredPost.findUnique({
+  const existing = await prisma.featuredJoke.findUnique({
     where: {
       type_date_language: {
-        type: FEATURED_POST.FASTEST_GROWING,
+        type: FEATURED_JOKE.FASTEST_GROWING,
         date: hourKeyUtc,
         language: lang,
       },
     },
-    select: { postId: true },
+    select: { jokeId: true },
   });
 
-  if (existing?.postId) {
+  if (existing?.jokeId) {
     logger.info(
       {
         event: "featured_compute_skipped_existing",
-        featureType: FEATURED_POST.FASTEST_GROWING,
+        featureType: FEATURED_JOKE.FASTEST_GROWING,
         language: lang,
         date: hourKeyUtc,
-        postId: existing.postId,
+        jokeId: existing.jokeId,
       },
       "Fastest growing 24h already computed"
     );
 
     return {
       status: "already_exists",
-      postId: existing.postId,
+      jokeId: existing.jokeId,
       language: lang,
     };
   }
 
   const likeWhere = {
     createdAt: { gte: windowStart, lt: now },
-    post: { published: true, language: lang },
+    joke: { published: true, language: lang },
   };
 
-  const rows = await prisma.postLike.groupBy({
-    by: ["postId"],
+  const rows = await prisma.jokeLike.groupBy({
+    by: ["jokeId"],
     where: likeWhere,
-    _count: { postId: true },
-    orderBy: { _count: { postId: "desc" } },
+    _count: { jokeId: true },
+    orderBy: { _count: { jokeId: "desc" } },
     take: 1,
   });
 
-  const winnerPostId = rows[0]?.postId ?? null;
-  const likeCount24h = rows[0]?._count?.postId ?? 0;
+  const winnerJokeId = rows[0]?.jokeId ?? null;
+  const likeCount24h = rows[0]?._count?.jokeId ?? 0;
 
-  if (!winnerPostId || likeCount24h === 0) {
+  if (!winnerJokeId || likeCount24h === 0) {
     logger.info(
       {
         event: "featured_compute_no_winner",
-        featureType: FEATURED_POST.FASTEST_GROWING,
+        featureType: FEATURED_JOKE.FASTEST_GROWING,
         language: lang,
         date: hourKeyUtc,
       },
@@ -742,48 +742,48 @@ export async function computeFastestGrowing24h({ language } = {}) {
 
     return {
       status: "no_winner",
-      postId: null,
+      jokeId: null,
       language: lang,
     };
   }
 
-  const winnerPost = await prisma.blogPost.findFirst({
-    where: { id: winnerPostId, language: lang },
+  const winnerJoke = await prisma.joke.findFirst({
+    where: { id: winnerJokeId, language: lang },
     select: { id: true, authorId: true },
   });
 
-  if (!winnerPost) {
+  if (!winnerJoke) {
     logger.warn(
       {
-        event: "featured_compute_missing_post",
-        featureType: FEATURED_POST.FASTEST_GROWING,
+        event: "featured_compute_missing_joke",
+        featureType: FEATURED_JOKE.FASTEST_GROWING,
         language: lang,
         date: hourKeyUtc,
-        winnerPostId,
+        winnerJokeId,
       },
-      "Fastest growing 24h winner post not found"
+      "Fastest growing 24h winner joke not found"
     );
 
     return {
-      status: "missing_post",
-      postId: null,
+      status: "missing_joke",
+      jokeId: null,
       language: lang,
     };
   }
 
   try {
-    await prisma.featuredPost.create({
+    await prisma.featuredJoke.create({
       data: {
-        type: FEATURED_POST.FASTEST_GROWING,
+        type: FEATURED_JOKE.FASTEST_GROWING,
         date: hourKeyUtc,
-        postId: winnerPost.id,
+        jokeId: winnerJoke.id,
         language: lang,
       },
     });
 
     await badgeService.awardFastestGrowingToAuthor({
-      authorId: winnerPost.authorId,
-      postId: winnerPost.id,
+      authorId: winnerJoke.authorId,
+      jokeId: winnerJoke.id,
       validFromUtc,
       validToUtc,
       likeCount24h,
@@ -793,11 +793,11 @@ export async function computeFastestGrowing24h({ language } = {}) {
     logger.info(
       {
         event: "featured_compute_created",
-        featureType: FEATURED_POST.FASTEST_GROWING,
+        featureType: FEATURED_JOKE.FASTEST_GROWING,
         language: lang,
         date: hourKeyUtc,
-        postId: winnerPost.id,
-        authorId: winnerPost.authorId,
+        jokeId: winnerJoke.id,
+        authorId: winnerJoke.authorId,
         likeCount24h,
       },
       "Fastest growing 24h computed and badge awarded"
@@ -805,8 +805,8 @@ export async function computeFastestGrowing24h({ language } = {}) {
 
     return {
       status: "created",
-      postId: winnerPost.id,
-      authorId: winnerPost.authorId,
+      jokeId: winnerJoke.id,
+      authorId: winnerJoke.authorId,
       likeCount24h,
       language: lang,
     };
@@ -815,17 +815,17 @@ export async function computeFastestGrowing24h({ language } = {}) {
       logger.warn(
         {
           event: "featured_compute_race_condition",
-          featureType: FEATURED_POST.FASTEST_GROWING,
+          featureType: FEATURED_JOKE.FASTEST_GROWING,
           language: lang,
           date: hourKeyUtc,
-          postId: winnerPost.id,
+          jokeId: winnerJoke.id,
         },
         "Fastest growing 24h already created by another concurrent process"
       );
 
       return {
         status: "duplicate_race",
-        postId: winnerPost.id,
+        jokeId: winnerJoke.id,
         language: lang,
       };
     }
@@ -837,16 +837,16 @@ export async function computeFastestGrowing24h({ language } = {}) {
 export async function getCurrentFeatured(type, { language } = {}) {
   const lang = normalizeLanguage(language);
 
-  const row = await prisma.featuredPost.findFirst({
+  const row = await prisma.featuredJoke.findFirst({
     where: { type, language: lang },
     orderBy: { date: "desc" },
-    select: { postId: true, date: true },
+    select: { jokeId: true, date: true },
   });
 
   if (!row) return null;
 
-  const post = await postService.getPostById(row.postId, { language: lang, published: true });
-  return { post, date: row.date, language: lang };
+  const joke = await jokeService.getJokeById(row.jokeId, { language: lang, published: true });
+  return { joke, date: row.date, language: lang };
 }
 
 export default {

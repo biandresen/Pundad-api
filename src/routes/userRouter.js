@@ -1,5 +1,5 @@
 import { Router } from "express";
-import postController from "../controllers/postController.js";
+import jokeController from "../controllers/jokeController.js";
 import userController from "../controllers/userController.js";
 import asyncErrorHandler from "../utils/asyncErrorHandler.js";
 import isAuthenticated from "../middleware/isAuthenticated.js";
@@ -56,11 +56,11 @@ router.delete(
 );
 
 router.get(
-  "/:id/posts",
+  "/:id/jokes",
   readHeavyLimiter,
   queryParametersValidator,
   checkValidation,
-  asyncErrorHandler(postController.getAllPostsFromUser),
+  asyncErrorHandler(jokeController.getAllJokesFromUser),
 );
 
 router.post(

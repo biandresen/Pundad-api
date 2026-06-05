@@ -2,25 +2,25 @@
   Warnings:
 
   - You are about to drop the column `language` on the `Comment` table. All the data in the column will be lost.
-  - You are about to drop the column `language` on the `PostLike` table. All the data in the column will be lost.
-  - A unique constraint covering the columns `[postId,userId]` on the table `PostLike` will be added. If there are existing duplicate values, this will fail.
+  - You are about to drop the column `language` on the `JokeLike` table. All the data in the column will be lost.
+  - A unique constraint covering the columns `[jokeId,userId]` on the table `JokeLike` will be added. If there are existing duplicate values, this will fail.
   - A unique constraint covering the columns `[token]` on the table `RefreshToken` will be added. If there are existing duplicate values, this will fail.
 
 */
 -- DropIndex
-DROP INDEX "BlogPost_language_published_idx";
+DROP INDEX "Joke_language_published_idx";
 
 -- DropIndex
 DROP INDEX "Comment_language_createdAt_idx";
 
 -- DropIndex
-DROP INDEX "Comment_language_createdAt_postId_idx";
+DROP INDEX "Comment_language_createdAt_jokeId_idx";
 
 -- DropIndex
-DROP INDEX "PostLike_language_createdAt_idx";
+DROP INDEX "JokeLike_language_createdAt_idx";
 
 -- DropIndex
-DROP INDEX "PostLike_postId_userId_language_key";
+DROP INDEX "JokeLike_jokeId_userId_language_key";
 
 -- DropIndex
 DROP INDEX "Tag_language_name_idx";
@@ -29,7 +29,7 @@ DROP INDEX "Tag_language_name_idx";
 ALTER TABLE "Comment" DROP COLUMN "language";
 
 -- AlterTable
-ALTER TABLE "PostLike" DROP COLUMN "language";
+ALTER TABLE "JokeLike" DROP COLUMN "language";
 
 -- CreateTable
 CREATE TABLE "ModerationTerm" (
@@ -51,7 +51,7 @@ CREATE UNIQUE INDEX "ModerationTerm_term_key" ON "ModerationTerm"("term");
 CREATE INDEX "ModerationTerm_isActive_idx" ON "ModerationTerm"("isActive");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "PostLike_postId_userId_key" ON "PostLike"("postId", "userId");
+CREATE UNIQUE INDEX "JokeLike_jokeId_userId_key" ON "JokeLike"("jokeId", "userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "RefreshToken_token_key" ON "RefreshToken"("token");

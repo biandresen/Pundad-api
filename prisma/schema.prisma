@@ -51,7 +51,7 @@ enum ProductEventType {
   EMAIL_VERIFIED
   LOGIN_SUCCESS
   DAILY_JOKE_VIEW
-  POST_PUBLISHED
+  JOKE_PUBLISHED
   COMMENT_CREATED
   SEARCH_EXECUTED
 }
@@ -90,20 +90,20 @@ model CurrentUserBadge {
   @@index([badge, language])
 }
 
-model FeaturedPost {
+model FeaturedJoke {
   id        Int         @id @default(autoincrement())
   type      FeatureType
   language  Language    @default(NO)
   date      DateTime
-  postId    Int
+  jokeId    Int
   createdAt DateTime    @default(now())
 
-  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  joke Joke @relation(fields: [jokeId], references: [id], onDelete: Cascade)
 
   @@unique([type, date, language])
   @@index([language, type, date])
   @@index([language, date])
-  @@index([postId])
+  @@index([jokeId])
 }
 
 model User {
@@ -120,9 +120,9 @@ model User {
   emailVerified           Boolean                  @default(false)
   emailVerifiedAt         DateTime?
 
-  blogPosts               BlogPost[]
+  jokes                   Joke[]
   comments                Comment[]
-  likes                   PostLike[]
+  likes                   JokeLike[]
   refreshTokens           RefreshToken[]
   resetPasswordTokens     ResetPasswordToken[]
   emailVerificationTokens EmailVerificationToken[]
@@ -149,7 +149,7 @@ model User {
   badgeAwards             BadgeAward[]
 }
 
-model BlogPost {
+model Joke {
   id         Int            @id @default(autoincrement())
   authorId   Int
   language   Language       @default(NO)
@@ -163,9 +163,9 @@ model BlogPost {
 
   user       User           @relation(fields: [authorId], references: [id])
   comments   Comment[]
-  likes      PostLike[]
-  tags       Tag[]          @relation("PostTags")
-  featuredIn FeaturedPost[]
+  likes      JokeLike[]
+  tags       Tag[]          @relation("JokeTags")
+  featuredIn FeaturedJoke[]
 
   @@index([language, published, createdAt])
   @@index([language, published, updatedAt])
@@ -176,16 +176,16 @@ model BlogPost {
 model Comment {
   id        Int      @id @default(autoincrement())
   authorId  Int
-  postId    Int
+  jokeId    Int
   body      String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
   user User     @relation(fields: [authorId], references: [id])
-  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  joke Joke @relation(fields: [jokeId], references: [id], onDelete: Cascade)
 
-  @@index([postId, createdAt])
+  @@index([jokeId, createdAt])
 }
 
 model Tag {
@@ -196,21 +196,21 @@ model Tag {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @default(now()) @updatedAt
 
-  posts     BlogPost[] @relation("PostTags")
+  jokes     Joke[] @relation("JokeTags")
 
   @@unique([language, name])
 }
 
-model PostLike {
-  postId    Int
+model JokeLike {
+  jokeId    Int
   userId    Int
   createdAt DateTime @default(now())
 
-  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  joke Joke @relation(fields: [jokeId], references: [id], onDelete: Cascade)
   user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([postId, userId])
-  @@index([postId, createdAt])
+  @@unique([jokeId, userId])
+  @@index([jokeId, createdAt])
   @@index([userId, createdAt])
 }
 

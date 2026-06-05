@@ -1,5 +1,5 @@
 import prisma from "../config/prismaClient.js";
-import { BADGE, FEATURED_POST } from "../constants.js";
+import { BADGE, FEATURED_JOKE } from "../constants.js";
 import { normalizeLanguage } from "../utils/language.js";
 
 async function getBadgeHistoryForUser(userId, { language, page = 1, limit = 15 } = {}) {
@@ -37,7 +37,7 @@ async function getBadgeHistoryForUser(userId, { language, page = 1, limit = 15 }
   };
 }
 
-export async function awardJokeOfTheDayToAuthor({ authorId, postId, dayUtc, language }) {
+export async function awardJokeOfTheDayToAuthor({ authorId, jokeId, dayUtc, language }) {
   const lang = normalizeLanguage(language);
 
   await prisma.badgeAward.upsert({
@@ -55,7 +55,7 @@ export async function awardJokeOfTheDayToAuthor({ authorId, postId, dayUtc, lang
       badge: BADGE.JOKE_OF_DAY,
       validFrom: dayUtc,
       language: lang,
-      context: { postId, language: lang },
+      context: { jokeId, language: lang },
     },
   });
 
@@ -69,7 +69,7 @@ export async function awardJokeOfTheDayToAuthor({ authorId, postId, dayUtc, lang
     },
     update: {
       since: dayUtc,
-      context: { postId, language: lang },
+      context: { jokeId, language: lang },
       validTo: null,
     },
     create: {
@@ -77,7 +77,7 @@ export async function awardJokeOfTheDayToAuthor({ authorId, postId, dayUtc, lang
       badge: BADGE.JOKE_OF_DAY,
       language: lang,
       since: dayUtc,
-      context: { postId, language: lang },
+      context: { jokeId, language: lang },
       validTo: null,
     },
   });
@@ -87,7 +87,7 @@ export async function awardTopCreatorMonthToUser({
   userId,
   monthStartUtc,
   monthEndUtc,
-  postCount,
+  jokeCount,
   context,
   language,
 }) {
@@ -104,7 +104,7 @@ export async function awardTopCreatorMonthToUser({
     },
     update: {
       validTo: monthEndUtc,
-      context: { postCount, ...(context || {}), language: lang },
+      context: { jokeCount, ...(context || {}), language: lang },
     },
     create: {
       userId,
@@ -112,7 +112,7 @@ export async function awardTopCreatorMonthToUser({
       validFrom: monthStartUtc,
       validTo: monthEndUtc,
       language: lang,
-      context: { postCount, ...(context || {}), language: lang },
+      context: { jokeCount, ...(context || {}), language: lang },
     },
   });
 
@@ -123,7 +123,7 @@ export async function awardTopCreatorMonthToUser({
     update: {
       since: monthStartUtc,
       validTo: monthEndUtc,
-      context: { postCount, ...(context || {}), language: lang },
+      context: { jokeCount, ...(context || {}), language: lang },
     },
     create: {
       userId,
@@ -131,14 +131,14 @@ export async function awardTopCreatorMonthToUser({
       language: lang,
       since: monthStartUtc,
       validTo: monthEndUtc,
-      context: { postCount, ...(context || {}), language: lang },
+      context: { jokeCount, ...(context || {}), language: lang },
     },
   });
 }
 
 export async function awardMostCommentedWeekToAuthor({
   authorId,
-  postId,
+  jokeId,
   weekStartUtc,
   weekEndUtc,
   commentCount,
@@ -150,22 +150,22 @@ export async function awardMostCommentedWeekToAuthor({
     where: {
       userId_badge_validFrom_language: {
         userId: authorId,
-        badge: FEATURED_POST.MOST_COMMENTED_WEEK,
+        badge: FEATURED_JOKE.MOST_COMMENTED_WEEK,
         validFrom: weekStartUtc,
         language: lang,
       },
     },
     update: {
       validTo: weekEndUtc,
-      context: { postId, commentCount, language: lang },
+      context: { jokeId, commentCount, language: lang },
     },
     create: {
       userId: authorId,
-      badge: FEATURED_POST.MOST_COMMENTED_WEEK,
+      badge: FEATURED_JOKE.MOST_COMMENTED_WEEK,
       validFrom: weekStartUtc,
       validTo: weekEndUtc,
       language: lang,
-      context: { postId, commentCount, language: lang },
+      context: { jokeId, commentCount, language: lang },
     },
   });
 
@@ -173,29 +173,29 @@ export async function awardMostCommentedWeekToAuthor({
     where: {
       userId_badge_language: {
         userId: authorId,
-        badge: FEATURED_POST.MOST_COMMENTED_WEEK,
+        badge: FEATURED_JOKE.MOST_COMMENTED_WEEK,
         language: lang,
       },
     },
     update: {
       since: weekStartUtc,
       validTo: weekEndUtc,
-      context: { postId, commentCount, language: lang },
+      context: { jokeId, commentCount, language: lang },
     },
     create: {
       userId: authorId,
-      badge: FEATURED_POST.MOST_COMMENTED_WEEK,
+      badge: FEATURED_JOKE.MOST_COMMENTED_WEEK,
       language: lang,
       since: weekStartUtc,
       validTo: weekEndUtc,
-      context: { postId, commentCount, language: lang },
+      context: { jokeId, commentCount, language: lang },
     },
   });
 }
 
 export async function awardTrendingWeekToAuthor({
   authorId,
-  postId,
+  jokeId,
   weekStartUtc,
   weekEndUtc,
   likeCount,
@@ -207,22 +207,22 @@ export async function awardTrendingWeekToAuthor({
     where: {
       userId_badge_validFrom_language: {
         userId: authorId,
-        badge: FEATURED_POST.TRENDING_WEEK,
+        badge: FEATURED_JOKE.TRENDING_WEEK,
         validFrom: weekStartUtc,
         language: lang,
       },
     },
     update: {
       validTo: weekEndUtc,
-      context: { postId, likeCount, language: lang },
+      context: { jokeId, likeCount, language: lang },
     },
     create: {
       userId: authorId,
-      badge: FEATURED_POST.TRENDING_WEEK,
+      badge: FEATURED_JOKE.TRENDING_WEEK,
       validFrom: weekStartUtc,
       validTo: weekEndUtc,
       language: lang,
-      context: { postId, likeCount, language: lang },
+      context: { jokeId, likeCount, language: lang },
     },
   });
 
@@ -230,29 +230,29 @@ export async function awardTrendingWeekToAuthor({
     where: {
       userId_badge_language: {
         userId: authorId,
-        badge: FEATURED_POST.TRENDING_WEEK,
+        badge: FEATURED_JOKE.TRENDING_WEEK,
         language: lang,
       },
     },
     update: {
       since: weekStartUtc,
       validTo: weekEndUtc,
-      context: { postId, likeCount, language: lang },
+      context: { jokeId, likeCount, language: lang },
     },
     create: {
       userId: authorId,
-      badge: FEATURED_POST.TRENDING_WEEK,
+      badge: FEATURED_JOKE.TRENDING_WEEK,
       language: lang,
       since: weekStartUtc,
       validTo: weekEndUtc,
-      context: { postId, likeCount, language: lang },
+      context: { jokeId, likeCount, language: lang },
     },
   });
 }
 
 export async function awardFastestGrowingToAuthor({
   authorId,
-  postId,
+  jokeId,
   validFromUtc,
   validToUtc,
   likeCount24h,
@@ -264,22 +264,22 @@ export async function awardFastestGrowingToAuthor({
     where: {
       userId_badge_validFrom_language: {
         userId: authorId,
-        badge: FEATURED_POST.FASTEST_GROWING,
+        badge: FEATURED_JOKE.FASTEST_GROWING,
         validFrom: validFromUtc,
         language: lang,
       },
     },
     update: {
       validTo: validToUtc,
-      context: { postId, likeCount24h, windowHours: 24, language: lang },
+      context: { jokeId, likeCount24h, windowHours: 24, language: lang },
     },
     create: {
       userId: authorId,
-      badge: FEATURED_POST.FASTEST_GROWING,
+      badge: FEATURED_JOKE.FASTEST_GROWING,
       validFrom: validFromUtc,
       validTo: validToUtc,
       language: lang,
-      context: { postId, likeCount24h, windowHours: 24, language: lang },
+      context: { jokeId, likeCount24h, windowHours: 24, language: lang },
     },
   });
 
@@ -287,22 +287,22 @@ export async function awardFastestGrowingToAuthor({
     where: {
       userId_badge_language: {
         userId: authorId,
-        badge: FEATURED_POST.FASTEST_GROWING,
+        badge: FEATURED_JOKE.FASTEST_GROWING,
         language: lang,
       },
     },
     update: {
       since: validFromUtc,
       validTo: validToUtc,
-      context: { postId, likeCount24h, windowHours: 24, language: lang },
+      context: { jokeId, likeCount24h, windowHours: 24, language: lang },
     },
     create: {
       userId: authorId,
-      badge: FEATURED_POST.FASTEST_GROWING,
+      badge: FEATURED_JOKE.FASTEST_GROWING,
       language: lang,
       since: validFromUtc,
       validTo: validToUtc,
-      context: { postId, likeCount24h, windowHours: 24, language: lang },
+      context: { jokeId, likeCount24h, windowHours: 24, language: lang },
     },
   });
 }

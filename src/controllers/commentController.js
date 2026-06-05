@@ -8,9 +8,9 @@ import logService from "../services/logService.js";
 import { getModerationLogData } from "../utils/moderationLogData.js";
 
 async function createComment(req, res, next) {
-  const postId = Number(req.params?.id);
-  if (isNaN(postId)) {
-    return next(new CustomError(400, "Invalid post id given"));
+  const jokeId = Number(req.params?.id);
+  if (isNaN(jokeId)) {
+    return next(new CustomError(400, "Invalid joke id given"));
   }
 
   const authorId = Number(req.user?.id);
@@ -30,12 +30,12 @@ async function createComment(req, res, next) {
 
     await logService.createModerationEvent({
       userId: Number(req.user?.id) || null,
-      action: "create_post",
+      action: "create_joke",
       blocked: true,
-      fieldNames: ["title", "body", "tags"],
+      fieldNames: ["comment"],
       matchedTerms,
       matchedVariants,
-      contentPreview: [title, body].filter(Boolean).join(" | ").slice(0, 160),
+      contentPreview: commentBody.slice(0, 160),
       ipAddress: req.ip,
       userAgent: req.headers["user-agent"] || null,
     });
@@ -48,14 +48,14 @@ async function createComment(req, res, next) {
   }
 
   const comment = await commentService.createComment(
-    postId,
+    jokeId,
     authorId,
     commentBody,
     { language }
   );
 
   if (!comment) {
-    return next(new CustomError(404, "Post not found for this language"));
+    return next(new CustomError(404, "Joke not found for this language"));
   }
 
   await logService.createProductEvent({
@@ -64,7 +64,7 @@ async function createComment(req, res, next) {
     path: req.originalUrl,
     language,
     metadata: {
-      postId,
+      jokeId,
       commentId: comment.id,
     },
     ipAddress: req.ip,
@@ -74,17 +74,17 @@ async function createComment(req, res, next) {
   return successResponse(res, 201, "Comment created successfully", comment);
 }
 
-async function getAllCommentsFromPost(req, res, next) {
-  const postId = Number(req.params?.id);
-  if (isNaN(postId)) {
-    return next(new CustomError(400, "Invalid post id given"));
+async function getAllCommentsFromJoke(req, res, next) {
+  const jokeId = Number(req.params?.id);
+  if (isNaN(jokeId)) {
+    return next(new CustomError(400, "Invalid joke id given"));
   }
 
   const language = req.language;
   const queryParams = matchedData(req);
 
   const { items, total, page, limit } =
-    await commentService.getAllCommentsFromPost(postId, {
+    await commentService.getAllCommentsFromJoke(jokeId, {
       ...queryParams,
       language,
     });
@@ -130,12 +130,12 @@ async function editComment(req, res, next) {
 
     await logService.createModerationEvent({
       userId: Number(req.user?.id) || null,
-      action: "create_post",
+      action: "create_joke",
       blocked: true,
-      fieldNames: ["title", "body", "tags"],
+      fieldNames: ["comment"],
       matchedTerms,
       matchedVariants,
-      contentPreview: [title, body].filter(Boolean).join(" | ").slice(0, 160),
+      contentPreview: commentBody.slice(0, 160),
       ipAddress: req.ip,
       userAgent: req.headers["user-agent"] || null,
     });
@@ -161,7 +161,7 @@ async function editComment(req, res, next) {
 
 export default {
   createComment,
-  getAllCommentsFromPost,
+  getAllCommentsFromJoke,
   deleteComment,
   editComment,
 };

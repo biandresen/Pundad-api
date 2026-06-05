@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: "pundad-api",
-      cwd: "/home/pi/projects/backend/Blog-API",
+      cwd: __dirname,
       script: "src/server.js",
       interpreter: "node",
       env: {
@@ -24,7 +24,7 @@ module.exports = {
     },
     {
       name: "pundad-worker",
-      cwd: "/home/pi/projects/backend/Blog-API",
+      cwd: __dirname,
       script: "src/jobs/worker.js",
       interpreter: "node",
       env: {

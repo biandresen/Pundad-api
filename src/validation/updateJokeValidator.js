@@ -1,7 +1,7 @@
 import { body } from "express-validator";
 import { MAX_CHARS } from "../constants.js";
 
-const updatePostValidator = [
+const updateJokeValidator = [
   body("title")
   .notEmpty().withMessage("Title cannot be empty")
   .trim().isLength({ max: MAX_CHARS.TITLE }).withMessage(`Title is too long. Max ${MAX_CHARS.TITLE} characters`),
@@ -23,4 +23,4 @@ const updatePostValidator = [
   body("published").optional().isBoolean().withMessage("Published must be a boolean").toBoolean(),
 ];
 
-export default updatePostValidator;
+export default updateJokeValidator;

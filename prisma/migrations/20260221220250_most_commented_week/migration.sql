@@ -18,7 +18,7 @@ COMMIT;
 -- AlterEnum
 BEGIN;
 CREATE TYPE "FeatureType_new" AS ENUM ('DAILY_JOKE', 'TOP_CREATOR_MONTH', 'TRENDING_WEEK', 'MOST_COMMENTED_WEEK', 'FASTEST_GROWING');
-ALTER TABLE "FeaturedPost" ALTER COLUMN "type" TYPE "FeatureType_new" USING ("type"::text::"FeatureType_new");
+ALTER TABLE "FeaturedJoke" ALTER COLUMN "type" TYPE "FeatureType_new" USING ("type"::text::"FeatureType_new");
 ALTER TYPE "FeatureType" RENAME TO "FeatureType_old";
 ALTER TYPE "FeatureType_new" RENAME TO "FeatureType";
 DROP TYPE "FeatureType_old";

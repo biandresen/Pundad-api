@@ -113,7 +113,7 @@ app.use("/api/v1", languageMiddleware);
 // --------------------------------------------------
 app.use("/api/v1/auth", routes.authRouter);
 app.use("/api/v1/user", routes.userRouter);
-app.use("/api/v1/posts", routes.postRouter);
+app.use("/api/v1/jokes", routes.jokeRouter);
 app.use("/api/v1/comments", routes.commentRouter);
 app.use("/api/v1/tags", routes.tagRouter);
 app.use("/api/v1/badges", routes.badgeRouter);

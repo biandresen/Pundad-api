@@ -14,8 +14,8 @@ router.post(
   isAuthenticated,
   isAdmin,
   asyncErrorHandler(async (req, res) => {
-    const postId = await featuredService.computeTopCreatorThisMonth();
-    return successResponse(res, 200, "Top creator computed", { postId });
+    const jokeId = await featuredService.computeTopCreatorThisMonth();
+    return successResponse(res, 200, "Top creator computed", { jokeId });
   })
 );
 
@@ -24,8 +24,8 @@ router.post(
   isAuthenticated,
   isAdmin,
   asyncErrorHandler(async (req, res) => {
-    const postId = await featuredService.computeMostCommentedThisWeek();
-    return successResponse(res, 200, "Most commented week computed", { postId });
+    const jokeId = await featuredService.computeMostCommentedThisWeek();
+    return successResponse(res, 200, "Most commented week computed", { jokeId });
   })
 );
 
@@ -34,8 +34,8 @@ router.post(
   isAuthenticated,
   isAdmin,
   asyncErrorHandler(async (req, res) => {
-    const postId = await featuredService.computeTrendingThisWeek();
-    return successResponse(res, 200, "Trending week computed", { postId });
+    const jokeId = await featuredService.computeTrendingThisWeek();
+    return successResponse(res, 200, "Trending week computed", { jokeId });
   })
 );
 
@@ -44,8 +44,8 @@ router.post(
   isAuthenticated,
   isAdmin,
   asyncErrorHandler(async (req, res) => {
-    const postId = await featuredService.computeFastestGrowing24h();
-    return successResponse(res, 200, "Fastest growing computed", { postId });
+    const jokeId = await featuredService.computeFastestGrowing24h();
+    return successResponse(res, 200, "Fastest growing computed", { jokeId });
   })
 );
 
@@ -73,14 +73,14 @@ router.get(
 
     const result = await featuredService.getCurrentFeatured(type, {language});
 
-    if (!result?.post) {
-      return successResponse(res, 200, "No featured post yet", null);
+    if (!result?.joke) {
+      return successResponse(res, 200, "No featured joke yet", null);
     }
 
-    return successResponse(res, 200, "Featured post retrieved", {
+    return successResponse(res, 200, "Featured joke retrieved", {
       type,
       date: result.date,
-      post: result.post,
+      joke: result.joke,
     });
   })
 );

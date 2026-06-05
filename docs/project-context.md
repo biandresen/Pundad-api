@@ -69,7 +69,7 @@ Explore button added on landing pages
 
 Database Structure (Simplified)
 
-BlogPost
+Joke
 
 id
 
@@ -103,11 +103,11 @@ featuredWins
 
 etc.
 
-FeaturedPost
+FeaturedJoke
 
 id
 
-postId
+jokeId
 
 type (daily, trending, etc.)
 

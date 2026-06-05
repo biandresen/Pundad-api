@@ -1,12 +1,12 @@
 import { Router } from "express";
-import postController from "../controllers/postController.js";
+import jokeController from "../controllers/jokeController.js";
 import commentController from "../controllers/commentController.js";
 import asyncErrorHandler from "../utils/asyncErrorHandler.js";
 import isAuthenticated from "../middleware/isAuthenticated.js";
-import isPostAuthorOrAdmin from "../middleware/isPostAuthorOrAdmin.js";
+import isJokeAuthorOrAdmin from "../middleware/isJokeAuthorOrAdmin.js";
 import isAdmin from "../middleware/isAdmin.js";
-import updatePostValidator from "../validation/updatePostValidator.js";
-import newPostValidator from "../validation/newPostValidator.js";
+import updateJokeValidator from "../validation/updateJokeValidator.js";
+import newJokeValidator from "../validation/newJokeValidator.js";
 import newCommentValidator from "../validation/newCommentValidator.js";
 import searchParametersValidator from "../validation/searchParametersValidator.js";
 import queryParametersValidator from "../validation/queryParametersValidator.js";
@@ -24,20 +24,20 @@ router.get(
   searchFiltersValidator,
   queryParametersValidator,
   checkValidation,
-  asyncErrorHandler(postController.searchPosts)
+  asyncErrorHandler(jokeController.searchJokes)
 );
 
-router.get("/popular", asyncErrorHandler(postController.getPopularPosts));
+router.get("/popular", asyncErrorHandler(jokeController.getPopularJokes));
 
-router.get("/random", asyncErrorHandler(postController.getRandomPost));
+router.get("/random", asyncErrorHandler(jokeController.getRandomJoke));
 
-router.get("/daily", asyncErrorHandler(postController.getDailyPost));
+router.get("/daily", asyncErrorHandler(jokeController.getDailyJoke));
 
 router.post(
   "/daily/view",
   readHeavyLimiter,
   isAuthenticated,
-  asyncErrorHandler(postController.recordDailyJokeView)
+  asyncErrorHandler(jokeController.recordDailyJokeView)
 );
 
 
@@ -47,7 +47,7 @@ router.get(
   isAuthenticated,
   queryParametersValidator,
   checkValidation,
-  asyncErrorHandler(postController.getAllDraftsFromCurrentUser)
+  asyncErrorHandler(jokeController.getAllDraftsFromCurrentUser)
 );
 
 router.get(
@@ -57,32 +57,32 @@ router.get(
   isAdmin,
   queryParametersValidator,
   checkValidation,
-  asyncErrorHandler(postController.getAllDrafts)
+  asyncErrorHandler(jokeController.getAllDrafts)
 );
 
-router.get("/:id",readHeavyLimiter, optionalAuth, asyncErrorHandler(postController.getPost));
+router.get("/:id",readHeavyLimiter, optionalAuth, asyncErrorHandler(jokeController.getJoke));
 
-router.get("/",readHeavyLimiter, queryParametersValidator, checkValidation, asyncErrorHandler(postController.getAllPosts));
+router.get("/",readHeavyLimiter, queryParametersValidator, checkValidation, asyncErrorHandler(jokeController.getAllJokes));
 
 router.patch(
   "/:id/publish",
   readHeavyLimiter,
   isAuthenticated,
-  isPostAuthorOrAdmin,
-  asyncErrorHandler(postController.publishDraft)
+  isJokeAuthorOrAdmin,
+  asyncErrorHandler(jokeController.publishDraft)
 );
 
 router.patch(
   "/:id",
   readHeavyLimiter,
   isAuthenticated,
-  isPostAuthorOrAdmin,
-  updatePostValidator,
+  isJokeAuthorOrAdmin,
+  updateJokeValidator,
   checkValidation,
-  asyncErrorHandler(postController.updatePost)
+  asyncErrorHandler(jokeController.updateJoke)
 );
 
-router.post("/:id/like", readHeavyLimiter, isAuthenticated, asyncErrorHandler(postController.toggleLike));
+router.post("/:id/like", readHeavyLimiter, isAuthenticated, asyncErrorHandler(jokeController.toggleLike));
 
 router.post(
   "/:id/comments",
@@ -98,18 +98,18 @@ router.get(
   readHeavyLimiter,
   queryParametersValidator,
   checkValidation,
-  asyncErrorHandler(commentController.getAllCommentsFromPost)
+  asyncErrorHandler(commentController.getAllCommentsFromJoke)
 );
 
 router.post(
   "/",
   readHeavyLimiter,
   isAuthenticated,
-  newPostValidator,
+  newJokeValidator,
   checkValidation,
-  asyncErrorHandler(postController.createPost)
+  asyncErrorHandler(jokeController.createJoke)
 );
 
-router.delete("/:id", readHeavyLimiter, isAuthenticated, isPostAuthorOrAdmin, asyncErrorHandler(postController.deletePost));
+router.delete("/:id", readHeavyLimiter, isAuthenticated, isJokeAuthorOrAdmin, asyncErrorHandler(jokeController.deleteJoke));
 
 export default router;

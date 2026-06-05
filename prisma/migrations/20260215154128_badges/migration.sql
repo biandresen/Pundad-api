@@ -5,7 +5,7 @@ CREATE TYPE "FeatureType" AS ENUM ('DAILY_JOKE');
 CREATE TYPE "BadgeKey" AS ENUM ('ADMIN', 'TOP_CREATOR_MONTH', 'JOKE_OF_DAY', 'TRENDING_WEEK', 'MOST_COMMENTED', 'FASTEST_GROWING', 'STREAK');
 
 -- AlterTable
-ALTER TABLE "PostLike" ADD COLUMN     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE "JokeLike" ADD COLUMN     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
 
 -- CreateTable
 CREATE TABLE "BadgeAward" (
@@ -33,14 +33,14 @@ CREATE TABLE "CurrentUserBadge" (
 );
 
 -- CreateTable
-CREATE TABLE "FeaturedPost" (
+CREATE TABLE "FeaturedJoke" (
     "id" SERIAL NOT NULL,
     "type" "FeatureType" NOT NULL,
     "date" TIMESTAMP(3) NOT NULL,
-    "postId" INTEGER NOT NULL,
+    "jokeId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "FeaturedPost_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "FeaturedJoke_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -59,22 +59,22 @@ CREATE INDEX "CurrentUserBadge_badge_idx" ON "CurrentUserBadge"("badge");
 CREATE UNIQUE INDEX "CurrentUserBadge_userId_badge_key" ON "CurrentUserBadge"("userId", "badge");
 
 -- CreateIndex
-CREATE INDEX "FeaturedPost_date_idx" ON "FeaturedPost"("date");
+CREATE INDEX "FeaturedJoke_date_idx" ON "FeaturedJoke"("date");
 
 -- CreateIndex
-CREATE INDEX "FeaturedPost_postId_idx" ON "FeaturedPost"("postId");
+CREATE INDEX "FeaturedJoke_jokeId_idx" ON "FeaturedJoke"("jokeId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "FeaturedPost_type_date_key" ON "FeaturedPost"("type", "date");
+CREATE UNIQUE INDEX "FeaturedJoke_type_date_key" ON "FeaturedJoke"("type", "date");
 
 -- CreateIndex
-CREATE INDEX "Comment_postId_createdAt_idx" ON "Comment"("postId", "createdAt");
+CREATE INDEX "Comment_jokeId_createdAt_idx" ON "Comment"("jokeId", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "PostLike_postId_createdAt_idx" ON "PostLike"("postId", "createdAt");
+CREATE INDEX "JokeLike_jokeId_createdAt_idx" ON "JokeLike"("jokeId", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "PostLike_userId_createdAt_idx" ON "PostLike"("userId", "createdAt");
+CREATE INDEX "JokeLike_userId_createdAt_idx" ON "JokeLike"("userId", "createdAt");
 
 -- AddForeignKey
 ALTER TABLE "BadgeAward" ADD CONSTRAINT "BadgeAward_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -83,4 +83,4 @@ ALTER TABLE "BadgeAward" ADD CONSTRAINT "BadgeAward_userId_fkey" FOREIGN KEY ("u
 ALTER TABLE "CurrentUserBadge" ADD CONSTRAINT "CurrentUserBadge_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "FeaturedPost" ADD CONSTRAINT "FeaturedPost_postId_fkey" FOREIGN KEY ("postId") REFERENCES "BlogPost"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "FeaturedJoke" ADD CONSTRAINT "FeaturedJoke_jokeId_fkey" FOREIGN KEY ("jokeId") REFERENCES "Joke"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -1,7 +1,7 @@
 {
-  "name": "blog-api",
+  "name": "joke-api",
   "version": "1.0.0",
-  "description": "RESTful Blog API for JAMstack project (TOP)",
+  "description": "RESTful Joke API for JAMstack project (TOP)",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
