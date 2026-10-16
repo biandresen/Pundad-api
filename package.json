@@ -5,6 +5,7 @@
   "main": "src/server.js",
   "type": "module",
   "scripts": {
+    "test": "node --experimental-test-module-mocks --test",
     "start": "PORT=4000 NODE_ENV=production LOG_LEVEL=info node src/server.js",
     "start:worker": "NODE_ENV=production LOG_LEVEL=info node src/jobs/worker.js",
     "dev": "PORT=4001 NODE_ENV=development LOG_LEVEL=debug node --watch src/server.js",

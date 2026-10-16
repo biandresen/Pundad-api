@@ -7,7 +7,15 @@ import checkValidation from "../middleware/checkValidation.js";
 import resetPasswordValidator from "../validation/resetPasswordValidator.js";
 import updatePasswordValidator from "../validation/updatePasswordValidator.js";
 import resendVerificationValidator from "../validation/resendVerificationValidator.js";
-import { authLimiter, registerLimiter } from "../middleware/rateLimiters.js";
+import {
+  authLimiter,
+  emailVerificationLimiter,
+  newPasswordLimiter,
+  passwordResetLimiter,
+  registerLimiter,
+  resendVerificationLimiter,
+  sessionLimiter,
+} from "../middleware/rateLimiters.js";
 
 const router = Router();
 
@@ -29,15 +37,15 @@ router.post(
   asyncErrorHandler(authController.loginUser)
 );
 
-router.post("/logout", authLimiter, asyncErrorHandler(authController.logoutUser));
+router.post("/logout", sessionLimiter, asyncErrorHandler(authController.logoutUser));
 
-router.post("/refresh", authLimiter, asyncErrorHandler(authController.refreshAccessToken));
+router.post("/refresh", sessionLimiter, asyncErrorHandler(authController.refreshAccessToken));
 
-router.get("/verify-email", authLimiter, asyncErrorHandler(authController.verifyEmail));
+router.get("/verify-email", emailVerificationLimiter, asyncErrorHandler(authController.verifyEmail));
 
 router.post(
   "/resend-verification",
-  authLimiter,
+  resendVerificationLimiter,
   resendVerificationValidator,
   checkValidation,
   asyncErrorHandler(authController.resendVerificationEmail)
@@ -45,7 +53,7 @@ router.post(
 
 router.post(
   "/new-password",
-  authLimiter,
+  newPasswordLimiter,
   updatePasswordValidator,
   checkValidation,
   asyncErrorHandler(authController.processResetPassword)
@@ -53,7 +61,7 @@ router.post(
 
 router.post(
   "/reset-password",
-  authLimiter,
+  passwordResetLimiter,
   resetPasswordValidator,
   checkValidation,
   asyncErrorHandler(authController.resetPassword)

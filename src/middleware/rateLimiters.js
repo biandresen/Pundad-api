@@ -20,8 +20,8 @@ function buildRateLimitHandler(defaultMessage) {
 }
 
 export const generalApiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 300,
+  windowMs: 5 * 60 * 1000,
+  max: 600,
   ...headers,
   handler: buildRateLimitHandler("Too many requests. Please wait a moment and try again."),
 });
@@ -41,17 +41,38 @@ export const profileLimiter = rateLimit({
 });
 
 export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
+  windowMs: 5 * 60 * 1000,
+  max: 30,
   ...headers,
   handler: buildRateLimitHandler("Too many authentication attempts. Please wait and try again."),
 });
 
-export const registerLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
+export const sessionLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 120,
+  ...headers,
+  handler: buildRateLimitHandler("Too many session requests. Please wait and try again."),
+});
+
+export const emailVerificationLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 30,
+  ...headers,
+  handler: buildRateLimitHandler("Too many email verification attempts. Please wait and try again."),
+});
+
+export const resendVerificationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
   max: 5,
   ...headers,
-  handler: buildRateLimitHandler("Too many accounts created from this IP. Try again later."),
+  handler: buildRateLimitHandler("Too many verification email requests. Please wait and try again."),
+});
+
+export const registerLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  ...headers,
+  handler: buildRateLimitHandler("Too many registration attempts from this IP. Try again later."),
 });
 
 export const passwordResetLimiter = rateLimit({
@@ -59,6 +80,13 @@ export const passwordResetLimiter = rateLimit({
   max: 5,
   ...headers,
   handler: buildRateLimitHandler("Too many password reset attempts. Try again later."),
+});
+
+export const newPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  ...headers,
+  handler: buildRateLimitHandler("Too many password update attempts. Try again later."),
 });
 
 export const contactLimiter = rateLimit({
