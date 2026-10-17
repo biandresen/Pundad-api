@@ -110,8 +110,7 @@ def main():
             "--setenv=npm_config_cache=" + str(state / "npm-cache"), "/bin/sh", "-eu", "-c",
             "npm ci --include=dev --no-audit --no-fund; "
             "node --import /usr/local/lib/pundad-deploy/productionEnvironment.js node_modules/prisma/build/index.js generate; "
-            "node --import /usr/local/lib/pundad-deploy/productionEnvironment.js node_modules/prisma/build/index.js migrate deploy; "
-            "node --import /usr/local/lib/pundad-deploy/productionEnvironment.js src/config/seed.js")
+            "node --import /usr/local/lib/pundad-deploy/productionEnvironment.js node_modules/prisma/build/index.js migrate deploy")
         # Repeat trust/head checks after the potentially long build, before any switch.
         run("/usr/bin/python3", str(CODE / "controller.py"), "verify", "--selection-file", str(args.selection_file))
         metadata = {"environment": "production", "apiSha": args.api_sha, "frontendSha": args.frontend_sha, "release": identifier}

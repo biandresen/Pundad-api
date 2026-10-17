@@ -214,6 +214,48 @@ def tick(api, config, environment):
         raise
 
 
+def maintain():
+    """Bound retained code/cache without deleting current or previous application releases."""
+    for environment in ("production", "staging"):
+        lock_path = "/run/pundad-" + environment + "-deploy.lock"
+        with open(lock_path, "a") as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                continue
+            root = Path("/srv/pundad") / environment
+            protected = {p.resolve() for p in (root / "current", root / "previous") if p.is_symlink()}
+            releases = root / "releases"
+            if releases.exists():
+                rows = sorted([p for p in releases.iterdir() if p.is_dir() and not p.is_symlink()], key=lambda p: p.name, reverse=True)
+                for path in rows[3:]:
+                    if path.resolve() not in protected:
+                        shutil.rmtree(path)
+            builds = Path("/var/lib/pundad-" + environment + "-build/build")
+            if builds.exists():
+                rows = sorted([p for p in builds.iterdir() if p.is_dir() and not p.is_symlink()], key=lambda p: p.stat().st_mtime, reverse=True)
+                for path in rows[2:]:
+                    if path.stat().st_mtime < time.time() - 3600:
+                        shutil.rmtree(path)
+    cache = STATE / "artifacts"
+    protected_cache = set()
+    for environment in ("production", "staging"):
+        record = STATE / (environment + ".json")
+        if record.exists():
+            for value in json.loads(record.read_text()).get("selection", {}).get("components", {}).values():
+                protected_cache.add(str(value["artifact"]) + ".zip")
+    if cache.exists():
+        rows = sorted(cache.glob("*.zip"), key=lambda p: p.stat().st_mtime, reverse=True)
+        for path in rows[20:]:
+            if path.name not in protected_cache:
+                path.unlink()
+    mail = Path("/var/lib/pundad-staging/mail")
+    if mail.exists():
+        for path in mail.glob("*.json"):
+            if path.lstat().st_mtime < time.time() - 7 * 86400:
+                path.unlink()
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=["tick", "plan", "verify"])
@@ -226,7 +268,11 @@ def main():
         verify(api, config, json.loads(args.selection_file.read_text()))
         return
     if args.action == "plan":
-        print(json.dumps(select(api, config, args.environment), indent=2))
+        try:
+            print(json.dumps(select(api, config, args.environment), indent=2))
+        except Pending as error:
+            print("Waiting: " + str(error))
+            raise SystemExit(2)
         return
     with open("/run/pundad-deploy.lock", "w") as lock:
         try:
@@ -240,6 +286,7 @@ def main():
             except Exception as error:
                 errors.append(environment)
                 print(environment + ": deployment failed (" + type(error).__name__ + "); inspect deployment/build logs", flush=True)
+        maintain()
         if errors:
             raise SystemExit(1)
 

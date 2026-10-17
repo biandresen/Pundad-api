@@ -5,9 +5,12 @@ what runs where, how to reproduce staging on another suitable machine, how to
 deploy a reviewed revision, and how to investigate failures.
 
 **Staging is live at https://staging.pundad.app.** It has its own database and
-captures email privately. Deployment is currently an operator-run command.
-GitHub Actions runs checks and saves frontend builds; it does not deploy yet.
-Production still uses its original PM2 processes and frontend directory.
+captures email privately. The first staging deployment used an operator-run command.
+The original manual staging milestone is documented below. Automatic PR/main
+release deployment has since been implemented; continue with
+[the automatic deployment guide](automatic-deployment.md) for the controller,
+production cutover, backups, retention, and enabled workflow behavior. The
+historical installation/release records below describe the initial milestone.
 
 The commands below run in an SSH terminal **on the Pi**, unless marked as
 browser/dashboard actions. Installation and deployment commands change host
@@ -369,7 +372,7 @@ CI runs on PRs targeting `main`, pushes to `main`, and manual workflow runs.
 It runs on GitHub-hosted Ubuntu, with read-only repository permissions and no
 production secrets. Backend CI has **API checks** and **Database migrations**;
 frontend CI has **Frontend checks**. Migration CI uses its own disposable
-PostgreSQL 17 database on the runner. Frontend artifacts expire after seven days.
+PostgreSQL 17 database on the runner. Frontend/API artifacts now expire after 30 days; see the automatic deployment guide for verified local caching.
 
 Both repositories protect `main`: PR required, required checks, up-to-date
 branches, resolved conversations, administrator enforcement, no force pushes
@@ -422,8 +425,9 @@ to identify the deployed application inputs.
 
 ## 10. Deploy manually from reviewed inputs
 
-These commands are the operator deployment path today. They are not executed
-by GitHub Actions. Set these values from the checks above:
+These commands remain an operator deployment path. The automatic controller
+selects/verifies matching artifacts and invokes the installed deployer itself;
+see [automatic deployment](automatic-deployment.md). Set these values from the checks above:
 
 ```bash
 stage_api_sha=YOUR_REVIEWED_40_CHARACTER_API_COMMIT
@@ -487,11 +491,10 @@ application rollback does not undo them. Use backward-compatible schema changes
 and reviewed data changes. A successful API readiness check does not prove that
 the background worker has completed its work; inspect its logs as well.
 
-Dependency note: the currently verified `npm ci` runs with `NODE_ENV=production`,
-so npm's production omission rules apply. With the committed lockfile, the
-Prisma CLI is installed and all migration steps succeeded. If dependency changes
-remove it from that install, fix the reviewed build dependency strategy before
-deployment; do not work around it with an unpinned privileged package install.
+Both automated build paths now use `npm ci --include=dev` explicitly, so locked
+build tools such as Prisma CLI remain available with `NODE_ENV=production`.
+Staging still runs its test-data seed; production deliberately does not run the
+seed because it reactivates existing moderation terms.
 
 ## 11. Verify locally before publishing DNS
 
@@ -713,14 +716,16 @@ recover if the chosen rollback target also fails. The atomic link change avoids
 partially switching API/frontend files; requests already in flight can still
 cross a release boundary. There is no database down-migration or upload rollback.
 
-Releases and failed candidates are currently retained; automated pruning is not
-implemented. Disk space is shared with production. Inspect `df -h`, releases,
+The automatic controller now prunes old releases/builds and expired captured
+mail; see its [retention policy](automatic-deployment.md). Disk space is shared with production. Inspect `df -h`, releases,
 and private build state before cleanup. Never remove `current`'s target,
 `previous`'s target, credentials, uploads, or database files as routine cleanup.
 Temporary downloaded artifacts under `/tmp` can be discarded after a verified
 deployment; they are not the running release.
 
-No scheduled staging backup/restore system was installed in this milestone.
+There is no scheduled staging backup/restore system. Production now has private
+pre-deployment and daily backups with a tested restore rehearsal; see the
+[production backup procedure](automatic-deployment.md).
 Rebuilding the schema from migrations is not the same as restoring user data.
 Credentials, persistent uploads, and any test data worth keeping need a separate
 private backup/restore plan. Keep production backups and production deployment
@@ -773,31 +778,20 @@ then provision it. Do not reuse this Pi's tunnel ID, credentials, or JWT secrets
 If the new host lacks systemd/Nginx/PostgreSQL or uses a different home/runtime
 layout, adapt the installation method rather than assuming this script is portable.
 
-## 18. Completed versus still planned
+## 18. Current rollout status
 
-Completed: separate development worktrees/database and laptop preview; GitHub
-CI and protected main; merged baseline CI PRs; public staging with separate
-runtime/database/uploads/credentials; captured mail; manual artifact-based
-deployment; release metadata; tested startup rollback; local and public HTTP
-acceptance checks. Staging services are enabled for boot. Reboot recovery was
-not tested by rebooting the production Pi.
+The initial development, CI, and public/manual staging milestones above are
+complete. Automatic deployment from successful trusted PRs to the shared staging
+slot has now also been exercised successfully. The production release deployer,
+fixed production guard, private backups/restore rehearsal, and main-based
+controller are implemented. See [automatic-deployment.md](automatic-deployment.md)
+for their installation, policy, production activation, and operation.
 
-Staging source is reviewable in backend PR #2 and frontend PR #188. Updating a
-branch, merging a PR, editing source, or successfully completing CI does not
-automatically change the running staging/production release today.
+The source under `ops/deploy/` must be installed as reviewed host code; a Git
+merge does not replace privileged host tooling. Once the controller is enabled,
+its timer detects eligible successful main runs and performs application
+releases. Arbitrary/fork PRs do not get that deployment path.
 
-Still planned:
-
-1. A trusted automatic staging deployment trigger and a restricted connection
-   from GitHub Actions to the Pi, or outbound artifact retrieval by the Pi.
-   Transport has not been selected/configured; no deployment runner, unrestricted
-   sudo path, or production credential was given to PR jobs.
-2. Selection/provenance checks for exact successful revisions and a policy for
-   a **single shared staging slot**. Two independent repos require an explicit
-   choice of the matching API/frontend pair; this is not a separate site per PR.
-3. Release/build/mail retention and maintained browser integration tests.
-4. Production versioned releases, a tested backup/restore plan, readiness-based
-   activation and rollback, then deployment after merge to `main`.
-
-The production-on-merge workflow must be added deliberately; it is not enabled
-by the presence of CI or by the completed staging installation.
+Off-device backup storage and maintained browser integration tests remain
+follow-up work. Boot-enabled services have been checked, but the production Pi
+was not rebooted merely to test them.

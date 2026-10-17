@@ -19,7 +19,9 @@ Files in `.github/workflows/ci.yml` configure the checks. They run on pull
 requests to `main`, pushes to `main`, and manual runs once the workflow is
 available on the default branch. Jobs run on GitHub-hosted Ubuntu machines,
 not on the production Pi. Their token has read-only repository permissions;
-these workflows do not deploy or receive production credentials.
+the workflows do not receive production credentials. A separate fixed Pi
+controller retrieves successful artifacts and performs deployment as described
+in [automatic-deployment.md](automatic-deployment.md).
 
 `.nvmrc` pins Node.js to 24.12.0, the version used for the existing tests on the
 Pi. `npm ci` installs dependency versions from `package-lock.json`. Action
@@ -33,6 +35,11 @@ Prisma Client, and runs the existing Node test suite. Tests replace external
 database and email services; their configured database URL is a dummy CI URL.
 The development environment loader has tests proving it rejects production
 targets and overrides an inherited production URL.
+
+The API checks job also runs the Python deployment-policy/archive tests and
+uploads `api-<build-sha>` containing a Git archive of the checked API commit.
+The controller requires the entire workflow to succeed, including migrations,
+before that artifact can deploy. API/frontend artifacts are retained for 30 days.
 
 The **Database migrations** job creates a disposable PostgreSQL 17 service on
 the GitHub runner. It applies every migration from an empty database, checks
@@ -64,8 +71,9 @@ They are unit tests; browser interaction tests are a later addition.
 
 The build uses relative API and upload origins. Nginx routes those paths
 to the matching API in staging or production. The resulting `dist/` is uploaded
-as a workflow artifact named for the checked commit and retained for seven
-days. An artifact is a saved build result, not an automatic deployment.
+as a workflow artifact named for the checked commit and retained for 30
+days. The Pi's controller verifies successful current artifacts before deploying;
+an artifact upload by itself does not activate a release.
 
 Run these locally in the frontend development worktree:
 
@@ -132,10 +140,11 @@ HTTP account flow have been verified. See [the staging runbook](staging.md) for
 the full installation and deployment procedure. Production data was not copied.
 
 The baseline CI PRs below were merged and main-branch protections configured.
-Automatic staging/production deployment is still pending; the current workflows
-stop after checks and frontend artifact upload.
+The workflows run checks and save exact API/frontend artifacts. The Pi's outbound
+controller implements staging/production deployment separately; see
+[the automatic deployment guide](automatic-deployment.md).
 
-Deployment transport still needs configuration. The connected GitHub app
+Deployment transport is outbound artifact retrieval by the Pi. The connected GitHub app
 returned 403 for repository writes and branch-protection access. GitHub CLI was
 installed on the Pi and authenticated over HTTPS using browser authorization;
 both development branches are published and their first CI runs passed.
@@ -174,9 +183,9 @@ reviewing that baseline change. Both baseline PRs were merged by the operator;
 the CI workflows do not deploy to production. The original production checkout
 was not updated or restarted by those merges.
 
-Git push authentication is separate from an authenticated network route from
-GitHub Actions back to the Pi. Choose a restricted deployment connection or
-outbound artifact retrieval before enabling staging deployment.
+Git push authentication and deployment transport are separate. Deployment now
+uses the Pi's outbound API/artifact requests; no inbound GitHub-to-Pi SSH route
+or deployment credentials in PR jobs were added.
 
 For backend previews on the same physical Pi, use a separate Unix identity and
 restricted resource access; a separate database alone does not isolate arbitrary
@@ -184,5 +193,6 @@ PR code from production files. Only trusted PRs should reach that deployment
 path. Public/fork PRs can run ordinary CI without receiving deployment secrets.
 
 These workflows stop after checks/build artifacts. Manual staging deployment
-is implemented separately in the backend's `ops/staging/` tooling. Automatic
-staging deployment and production release/rollback are not enabled yet.
+and automatic deployment are implemented separately in the backend's
+`ops/staging/` and `ops/deploy/` tooling. Production activation follows successful
+current main CI, with private backups, readiness checks, and application rollback.

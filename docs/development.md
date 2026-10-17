@@ -115,19 +115,22 @@ services and must not require production secrets.
    API/worker/database/uploads/secrets, private email capture, a reviewed manual
    release deployer, and a successful startup-failure rollback test. Local and
    public registration/verification/login/refresh checks passed.
-4. **Pending:** trusted automatic deployment of successful PR revisions to the
-   shared staging slot. Deployment transport is not configured yet.
-5. **Pending:** production versioned releases, backup/restore and readiness-based
-   activation/rollback, followed by deployment after merge to `main`.
+4. **Implemented and staging-verified:** trusted automatic PR artifact retrieval
+   and release deployment by the Pi, including branch pairing and a shared slot.
+5. **Implemented:** production versioned releases, private pre-migration/daily
+   backups and restore rehearsal, readiness/worker checks, application rollback,
+   and deployment after successful current main CI.
 
-Production's original source checkout and PM2 processes still serve production;
-merging a PR does not automatically pull that checkout or deploy either site.
+See [the automatic deployment guide](automatic-deployment.md) for activation,
+credentials, timers, production migration behavior, and verification. The
+controller deploys artifacts; it does not pull/reset the original checkout.
 
 ## Continuous integration
 
 CI workflows are merged and the required checks protect `main`. See
 [the CI guide](continuous-integration.md) for workflow details, local commands,
-and branch protection. GitHub Actions currently checks/builds; it does not deploy.
+and branch protection. The Pi retrieves successful CI artifacts and deploys them; see
+[automatic deployment](automatic-deployment.md) for policy and operation.
 
 ## Staging runtime
 

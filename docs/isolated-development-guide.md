@@ -491,9 +491,11 @@ and the same `-dev` worktrees moved to `chore/staging-runtime` for the now-live
 public staging system. No additional editable development directories were
 created for staging. Staging runs installed releases under `/srv/pundad/staging`.
 
-Shadow-database setup, automatic PR deployment, and production releases/rollback
-are still pending. See [the staging runbook](staging.md) for the implemented
-stages, exact commands and verification results, and what remains to automate.
+Shadow-database setup remains pending. Public staging and the PR/main deployment
+controller, production releases, private backups/restore rehearsal, and rollback
+have since been implemented. Continue with [the staging runbook](staging.md)
+and [automatic deployment](automatic-deployment.md) for the current system and
+exact reproduction/operation commands.
 
 ## References
 
