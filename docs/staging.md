@@ -69,12 +69,12 @@ process group. It is separate from production's existing PM2 daemon.
 | API address on Pi | `127.0.0.1:4001` | `127.0.0.1:4002` | `127.0.0.1:4000` |
 | Database | `pundad_dev` | `pundad_staging` | `jokedb` |
 | Database login | `pundad_dev` | `pundad_staging` | Existing production login |
-| API files | Backend `-dev` worktree | `/srv/pundad/staging/current/api` | Original backend checkout |
-| Frontend files | Frontend `-dev` worktree, served by Vite | `/srv/pundad/staging/current/frontend` | `/var/www/pundad-frontend` |
+| API files | Backend `-dev` worktree | `/srv/pundad/staging/current/api` | `/srv/pundad/production/current/api` after activation |
+| Frontend files | Frontend `-dev` worktree, served by Vite | `/srv/pundad/staging/current/frontend` | `/srv/pundad/production/current/frontend` after activation |
 | Uploads | Backend `-dev` worktree's `uploads/` | `/srv/pundad/staging/uploads` | `/var/www/pundad-uploads` |
 | Email | Printed in API terminal | Private JSON message files | Existing real delivery |
-| Secrets/config | Ignored `.env.development` | `/etc/pundad/staging/api.env` | Existing production configuration |
-| Process startup | `npm run dev`; optional dev worker | `pundad-staging.service` | Existing production PM2 setup |
+| Secrets/config | Ignored `.env.development` | `/etc/pundad/staging/api.env` | `/etc/pundad/production/api.env`, preserving existing credentials |
+| Process startup | `npm run dev`; optional dev worker | `pundad-staging.service` | `pundad-production.service` manages its PM2 runtime after activation |
 
 The two editable worktrees are:
 
