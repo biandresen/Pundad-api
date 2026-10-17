@@ -15,6 +15,7 @@ from common import extract_zip, fingerprint, sha, write_json
 CONFIG = Path("/etc/pundad/deploy.json")
 STATE = Path("/var/lib/pundad-deploy")
 CODE = Path("/usr/local/lib/pundad-deploy")
+RELEASES = Path("/srv/pundad")
 
 
 class Pending(Exception):
@@ -159,6 +160,16 @@ def reports(api, selection, state, deployment_ids=None):
     return ids
 
 
+def active_matches(selection):
+    try:
+        metadata = json.loads((RELEASES / selection["environment"] / "current/frontend/__version.json").read_text())
+    except (OSError, ValueError):
+        return False
+    return (metadata.get("environment") == selection["environment"] and
+            metadata.get("apiSha") == selection["components"]["api"]["sha"] and
+            metadata.get("frontendSha") == selection["components"]["frontend"]["sha"])
+
+
 def tick(api, config, environment):
     if not config.get("enabled", {}).get(environment, False):
         return
@@ -170,7 +181,7 @@ def tick(api, config, environment):
         print(environment + ": " + str(error), flush=True)
         return
     key = fingerprint(selection)
-    if state.get("success") == key:
+    if state.get("success") == key and active_matches(selection):
         print(environment + ": already deployed", flush=True)
         return
     if state.get("failed") == key and time.time() < state.get("retry_after", 0):

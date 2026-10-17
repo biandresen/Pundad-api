@@ -155,6 +155,11 @@ is generated and committed migrations are applied to `jokedb` with a fixed,
 host-installed production environment guard preloaded. Production does **not**
 run the moderation seed: that seed resets categories/isActive on existing rows.
 The production database and `/var/www/pundad-uploads` stay in place.
+PM2 uses its managed log files, which pm2-runtime also forwards to the journal.
+The installer adds daily system logrotate rules for both environments: seven
+archives, compression, and a 10 MiB maxsize check when logrotate runs. Direct
+`/dev/stdout` log-file settings are avoided because PM2 cannot reopen systemd
+stdout sockets as ordinary files.
 
 Before each production build/migration, the deployer takes a private snapshot.
 After the build it revalidates the GitHub selection, switches the release,

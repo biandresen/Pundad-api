@@ -66,6 +66,8 @@ for name in ("ecosystem.config.cjs", "nginx.conf"):
     shutil.copyfile(source / name, production / name)
     os.chown(production / name, 0, pi.pw_gid)
     (production / name).chmod(0o640)
+shutil.copyfile(source / "logrotate.conf", "/etc/logrotate.d/pundad-services")
+Path("/etc/logrotate.d/pundad-services").chmod(0o644)
 for name in ("pundad-production.service", "pundad-deploy.service", "pundad-deploy.timer", "pundad-backup.service", "pundad-backup.timer"):
     shutil.copyfile(source / name, Path("/etc/systemd/system") / name)
     (Path("/etc/systemd/system") / name).chmod(0o644)
