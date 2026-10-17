@@ -1,10 +1,7 @@
 import prisma from "../config/prismaClient.js";
-import { Prisma } from "@prisma/client";
 
 import { FEATURED_JOKE } from "../constants.js";
 import { startOfUtcDay } from "../utils/date.js";
-import { deterministicIndex } from "../utils/deterministicIndex.js";
-import badgeService from "./badgeService.js";
 import { normalizeLanguage } from "../utils/language.js";
 
 /**
