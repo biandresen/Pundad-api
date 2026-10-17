@@ -1,0 +1,26 @@
+[Unit]
+Description=Dedicated Cloudflare Tunnel for PunDad staging
+After=network-online.target nginx.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=cloudflared-staging
+Group=cloudflared-staging
+ExecStart=/usr/local/bin/cloudflared --no-autoupdate --config /etc/cloudflared/pundad-staging.yml tunnel run
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectHome=true
+ProtectSystem=strict
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryMax=256M
+CPUQuota=25%
+
+[Install]
+WantedBy=multi-user.target

@@ -120,3 +120,8 @@ CI workflows for lint, tests, migration checks, and build artifacts are publishe
 in pull requests, and their first GitHub runs passed. See
 [the CI guide](continuous-integration.md) for the workflows, local commands,
 branch protection settings, and the public staging plan.
+
+## Staging runtime
+
+The next environment is the public staging site. See [the staging guide](staging.md)
+for accounts, services, private email capture, manual deployments, and inspection.

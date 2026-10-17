@@ -1,4 +1,7 @@
 import { Resend } from "resend";
+import { randomUUID } from "node:crypto";
+import { writeFile } from "node:fs/promises";
+import path from "node:path";
 import { normalizeLanguage } from "../utils/normalizeLanguage.js";
 
 let resend;
@@ -121,6 +124,20 @@ function getContactConfirmationContent({ name, topic }, language = "EN") {
 }
 
 async function sendEmail({ to, subject, html, text, replyTo = EMAIL_REPLY_TO }) {
+  if (process.env.EMAIL_DELIVERY === "capture") {
+    if (process.env.APP_ENV !== "staging" || !path.isAbsolute(process.env.EMAIL_CAPTURE_DIR || "")) {
+      throw new Error("Email capture requires the staging environment and an absolute private directory.");
+    }
+
+    const id = randomUUID();
+    await writeFile(
+      path.join(process.env.EMAIL_CAPTURE_DIR, `${Date.now()}-${id}.json`),
+      JSON.stringify({ to, subject, text, html, replyTo, createdAt: new Date().toISOString() }, null, 2),
+      { mode: 0o600, flag: "wx" },
+    );
+    return { data: { id } };
+  }
+
   if (process.env.EMAIL_DELIVERY === "console") {
     if (process.env.NODE_ENV !== "development") {
       throw new Error("Console email delivery is only available in development.");

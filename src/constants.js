@@ -7,7 +7,9 @@ export const FRONTEND_BASE_URL =
   process.env.FRONTEND_BASE_URL ||
   (process.env.NODE_ENV === "production" ? "https://pundad.app" : "http://localhost:5173");
 
-export const CORS_ORIGINS = [
+export const CORS_ORIGINS = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean)
+  : [
   "https://pundad.app",
   "https://www.pundad.app",
   "http://localhost:5173",
