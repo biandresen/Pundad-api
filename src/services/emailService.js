@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 import { normalizeLanguage } from "../utils/normalizeLanguage.js";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resend;
 
 const EMAIL_FROM = process.env.EMAIL_FROM || "PunDad <noreply@pundad.app>";
 const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || "support@pundad.app";
@@ -121,6 +121,17 @@ function getContactConfirmationContent({ name, topic }, language = "EN") {
 }
 
 async function sendEmail({ to, subject, html, text, replyTo = EMAIL_REPLY_TO }) {
+  if (process.env.EMAIL_DELIVERY === "console") {
+    if (process.env.NODE_ENV !== "development") {
+      throw new Error("Console email delivery is only available in development.");
+    }
+
+    // Includes verification/reset links for local testing. Never use production data here.
+    console.info(JSON.stringify({ event: "development_email", to, subject, text }));
+    return { data: { id: "development-console-email" } };
+  }
+
+  resend ??= new Resend(process.env.RESEND_API_KEY);
   return resend.emails.send({
     from: EMAIL_FROM,
     to,

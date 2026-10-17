@@ -10,7 +10,7 @@ import isSelfOrAdmin from "../middleware/isSelfOrAdmin.js";
 import queryParametersValidator from "../validation/queryParametersValidator.js";
 import checkValidation from "../middleware/checkValidation.js";
 import avatarUpload from "../middleware/avatarUpload.js";
-import { profileLimiter, readHeavyLimiter, uploadLimiter } from "../middleware/rateLimiters.js";
+import { profileLimiter, readHeavyLimiter } from "../middleware/rateLimiters.js";
 
 const router = Router();
 

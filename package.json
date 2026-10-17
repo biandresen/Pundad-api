@@ -8,15 +8,18 @@
     "test": "node --experimental-test-module-mocks --test",
     "start": "PORT=4000 NODE_ENV=production LOG_LEVEL=info node src/server.js",
     "start:worker": "NODE_ENV=production LOG_LEVEL=info node src/jobs/worker.js",
-    "dev": "PORT=4001 NODE_ENV=development LOG_LEVEL=debug node --watch src/server.js",
-    "dev:api": "PORT=4001 NODE_ENV=development LOG_LEVEL=debug node src/server.js",
-    "dev:worker": "NODE_ENV=development LOG_LEVEL=debug node src/jobs/worker.js",
-    "dev:runOnce": "NODE_ENV=development LOG_LEVEL=debug node src/jobs/runOnce.js",
+    "dev": "node --import ./src/config/developmentEnvironment.js --watch src/server.js",
+    "dev:api": "node --import ./src/config/developmentEnvironment.js src/server.js",
+    "dev:worker": "node --import ./src/config/developmentEnvironment.js src/jobs/worker.js",
+    "dev:runOnce": "node --import ./src/config/developmentEnvironment.js src/jobs/runOnce.js",
+    "db:dev:deploy": "node --import ./src/config/developmentEnvironment.js node_modules/prisma/build/index.js migrate deploy",
+    "db:dev:seed": "node --import ./src/config/developmentEnvironment.js src/config/seed.js",
     "prod:test:api": "PORT=4000 NODE_ENV=production LOG_LEVEL=info node src/server.js",
     "prod:test:worker": "NODE_ENV=production LOG_LEVEL=info node src/jobs/worker.js",
     "prod:test:runOnce": "NODE_ENV=production LOG_LEVEL=info node src/jobs/runOnce.js",
     "seed": "node src/config/seed.js",
-    "db:reset": "node src/config/reset-db.js"
+    "db:reset": "node src/config/reset-db.js",
+    "lint": "eslint ."
   },
   "keywords": [],
   "author": "",
@@ -47,7 +50,10 @@
     "sharp": "^0.34.5"
   },
   "devDependencies": {
+    "@eslint/js": "9.31.0",
     "@types/node": "^22.15.21",
+    "eslint": "9.31.0",
+    "globals": "16.3.0",
     "prisma": "^6.8.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"

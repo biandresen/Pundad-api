@@ -4,9 +4,8 @@ export const ROLES = {
 };
 
 export const FRONTEND_BASE_URL =
-  process.env.NODE_ENV == "production" ?
-    process.env.FRONTEND_BASE_URL || "https://pundad.app"
-  : "http://127.0.0.1:5173";
+  process.env.FRONTEND_BASE_URL ||
+  (process.env.NODE_ENV === "production" ? "https://pundad.app" : "http://localhost:5173");
 
 export const CORS_ORIGINS = [
   "https://pundad.app",

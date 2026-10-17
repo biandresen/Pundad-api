@@ -5,8 +5,7 @@ import moderationService from "./services/moderationService.js";
 import logger from "./config/logger.js";
 
 const port = process.env.PORT || 4000;
-//127.0.0.1 is the local port. 0.0.0.0 is like localhost
-const host = process.env.NODE_ENV === "production" ? "127.0.0.1" : "0.0.0.0";
+const host = process.env.HOST || (process.env.NODE_ENV === "production" ? "127.0.0.1" : "0.0.0.0");
 
 process.on("unhandledRejection", (reason) => {
   logger.error(

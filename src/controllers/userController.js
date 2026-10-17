@@ -6,7 +6,6 @@ import userService from "../services/userService.js";
 import { toClientUser } from "../utils/toClientUser.js";
 import { moderateFields } from "../utils/moderation.js";
 import logService from "../services/logService.js";
-import { getModerationLogData } from "../utils/moderationLogData.js";
 import authService from "../services/authService.js";
 import crypto from "crypto";
 import emailService from "../services/emailService.js";
@@ -249,7 +248,7 @@ async function reactivateUser(req, res, next) {
     return next(new CustomError(400, "Invalid user id given"));
   }
 
-  const targetUser = await userService.getUserByIdIncludingInactive(userId);
+  await userService.getUserByIdIncludingInactive(userId);
 
   const updatedUser = await userService.reactivateUser(userId);
 

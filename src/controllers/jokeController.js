@@ -4,7 +4,6 @@ import userService from "../services/userService.js";
 import CustomError from "../utils/CustomError.js";
 import normalizeTags from "../utils/normalizeTags.js";
 import successResponse from "../utils/successResponse.js";
-import { toClientUser } from "../utils/toClientUser.js";
 import { isSameUtcDay, isYesterdayUtc } from "../utils/date.js";
 import { buildPageMeta } from "../utils/paginationMeta.js";
 import { moderateFields } from "../utils/moderation.js";
