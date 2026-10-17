@@ -34,6 +34,16 @@ jobs:
       - run: npx prisma validate
       - run: npx prisma generate
       - run: npm test
+      - name: Deployment policy and archive checks
+        run: python3 -m unittest discover -s ops/deploy/tests -v
+      - name: Archive the exact checked API commit
+        run: git archive --format=tar --output=api.tar HEAD
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: api-${{ github.sha }}
+          path: api.tar
+          if-no-files-found: error
+          retention-days: 30
 
   database:
     name: Database migrations

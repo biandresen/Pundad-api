@@ -20,6 +20,7 @@ import {
 const router = Router();
 
 router.get("/health", authController.health);
+router.get("/ready", authController.readiness);
 
 router.post(
   "/register",

@@ -1,0 +1,11 @@
+[Unit]
+Description=Private PunDad production database and uploads backup
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/bin/flock /run/pundad-production-deploy.lock /usr/bin/python3 /usr/local/lib/pundad-deploy/backup.py
+Nice=15
+TimeoutStartSec=900

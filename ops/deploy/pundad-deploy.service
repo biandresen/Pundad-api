@@ -1,0 +1,17 @@
+[Unit]
+Description=Deploy verified PunDad GitHub CI artifacts
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/usr/local/lib/pundad-deploy
+Environment=GH_CONFIG_DIR=/home/pi/.config/gh
+Environment=GH_PROMPT_DISABLED=1
+Environment=PATH=/opt/pundad/node-v24.12.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/bin
+ExecStart=/usr/bin/python3 /usr/local/lib/pundad-deploy/controller.py tick
+TimeoutStartSec=3600
+UMask=0077
+Nice=10
+

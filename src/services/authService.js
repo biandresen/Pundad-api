@@ -1,5 +1,9 @@
 import prisma from "../config/prismaClient.js";
 
+async function checkDatabaseConnection() {
+  await prisma.$queryRaw`SELECT 1`;
+}
+
 async function storeResetPasswordToken(userId, { token, issuedAt, expiresAt, userAgent, ipAddress }) {
   await prisma.resetPasswordToken.deleteMany({
     where: {
@@ -155,6 +159,7 @@ async function createEmailVerificationToken(userId, tokenData) {
 }
 
 export default {
+  checkDatabaseConnection,
   storeRefreshToken,
   deleteRefreshToken,
   getRefreshToken,

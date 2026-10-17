@@ -1,0 +1,36 @@
+[Unit]
+Description=PunDad staging API and worker managed by PM2
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=pundad-staging
+Group=pundad-staging
+WorkingDirectory=/srv/pundad/staging/current/api
+EnvironmentFile=/etc/pundad/staging/api.env
+Environment=PATH=/opt/pundad/node-v24.12.0/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PM2_HOME=/var/lib/pundad-staging/pm2
+ExecStart=/opt/pundad/node-v24.12.0/bin/node /opt/pundad/pm2/bin/pm2-runtime start /etc/pundad/staging/ecosystem.config.cjs
+Restart=on-failure
+RestartSec=5
+KillMode=control-group
+TimeoutStopSec=20
+UMask=0007
+NoNewPrivileges=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/pundad-staging /srv/pundad/staging/uploads
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryMax=768M
+CPUQuota=50%
+TasksMax=128
+
+[Install]
+WantedBy=multi-user.target

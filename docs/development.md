@@ -8,7 +8,9 @@ For a reusable explanation of the concepts and setup, see [the isolated developm
 
 ## Step 1: isolated development
 
-Development uses Git worktrees on the `chore/development-workflow` branch:
+Development uses two Git worktrees, initially created on
+`chore/development-workflow`. Those baseline changes were merged into GitHub
+`main`; the same directories now check out `chore/staging-runtime`:
 
 - API: `/home/pi/projects/backend/pundad-api-dev`
 - Frontend: `/home/pi/projects/frontend/pundad-app-dev`
@@ -103,20 +105,36 @@ Use browser Network tools to confirm API requests go to
 addition. Backend tests substitute external
 services and must not require production secrets.
 
-## Remaining steps
+## Rollout status as of 17 October 2026
 
-1. Review and merge the CI pull requests after all required checks pass.
-2. Configure staging DNS/TLS, isolated API/database/uploads, and email capture.
-3. Deploy trusted PRs to a shared staging slot with a deployment lock.
-4. Move production processes to versioned release directories, then enable
-   deployment after merge, readiness checks, backups, and application rollback.
+1. **Completed:** isolated development database/configuration, worktrees, and
+   laptop preview through SSH forwarding.
+2. **Completed:** CI pull requests merged, required checks and protection on
+   `main` in both repositories. GitHub CLI is authenticated for repository work.
+3. **Completed:** public HTTPS staging at https://staging.pundad.app, its own
+   API/worker/database/uploads/secrets, private email capture, a reviewed manual
+   release deployer, and a successful startup-failure rollback test. Local and
+   public registration/verification/login/refresh checks passed.
+4. **Implemented and staging-verified:** trusted automatic PR artifact retrieval
+   and release deployment by the Pi, including branch pairing and a shared slot.
+5. **Implemented:** production versioned releases, private pre-migration/daily
+   backups and restore rehearsal, readiness/worker checks, application rollback,
+   and deployment after successful current main CI.
 
-Production deployment transport (restricted SSH over an authenticated network
-or outbound artifact retrieval) must be chosen before deployment automation.
+See [the automatic deployment guide](automatic-deployment.md) for activation,
+credentials, timers, production migration behavior, and verification. The
+controller deploys artifacts; it does not pull/reset the original checkout.
 
 ## Continuous integration
 
-CI workflows for lint, tests, migration checks, and build artifacts are published
-in pull requests, and their first GitHub runs passed. See
-[the CI guide](continuous-integration.md) for the workflows, local commands,
-branch protection settings, and the public staging plan.
+CI workflows are merged and the required checks protect `main`. See
+[the CI guide](continuous-integration.md) for workflow details, local commands,
+and branch protection. The Pi retrieves successful CI artifacts and deploys them; see
+[automatic deployment](automatic-deployment.md) for policy and operation.
+
+## Staging runtime
+
+The public staging site is live. See [the complete staging runbook](staging.md)
+for the architecture, exact reproduction steps, tunnel/DNS setup, CI artifact
+selection, manual deployment, verification, database inspection, rollback,
+troubleshooting, and the remaining automation work.

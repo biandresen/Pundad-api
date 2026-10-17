@@ -23,6 +23,15 @@ async function health(req, res, next) {
   successResponse(res, 200, "Health is ok");
 }
 
+async function readiness(req, res) {
+  try {
+    await authService.checkDatabaseConnection();
+    return successResponse(res, 200, "Service is ready");
+  } catch {
+    return res.status(503).json({ status: "error", statusCode: 503, message: "Service is not ready" });
+  }
+}
+
 async function registerUser(req, res, next) {
   const { username, email, password, acceptedTerms } = matchedData(req);
 
@@ -331,6 +340,7 @@ async function resendVerificationEmail(req, res, next) {
 
 export default {
   health,
+  readiness,
   registerUser,
   loginUser,
   logoutUser,

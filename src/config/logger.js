@@ -6,7 +6,7 @@ const logger = pino({
   level: process.env.LOG_LEVEL || (isProduction ? "info" : "debug"),
   base: {
     service: "dadjokes-api",
-    env: process.env.NODE_ENV || "development",
+    env: process.env.APP_ENV || process.env.NODE_ENV || "development",
   },
   timestamp: pino.stdTimeFunctions.isoTime,
   redact: {
