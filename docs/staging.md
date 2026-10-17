@@ -29,6 +29,7 @@ The separate tunnel avoids restarting or editing production's tunnel.
 | Resource | Staging value |
 | --- | --- |
 | Linux service identity | `pundad-staging`, no interactive login |
+| Build identity | `pundad-staging-build`, separate from the running application |
 | Database and database login | `pundad_staging` |
 | Runtime credentials | `/etc/pundad/staging/api.env`, root/staging group only |
 | Release directories | `/srv/pundad/staging/releases/<release>/` |
@@ -99,7 +100,7 @@ automatic deployment trigger.
 5. Run the fixed staging deployer with those inputs and their full commit IDs:
 
 ```bash
-sudo python3 ops/staging/deploy.py \
+sudo python3 /usr/local/lib/pundad-staging/deploy.py \
   --api-archive /path/to/reviewed-api.tar \
   --frontend-dir /path/to/unpacked-ci-dist \
   --api-sha <40-character-api-commit> \
@@ -114,9 +115,12 @@ head. `/__version.json` exposes the deployed revisions without secrets.
 The deployer serializes operations with a host lock. It extracts sources into
 a new build directory, installs dependencies and generates Prisma Client on
 the Pi's ARM architecture, applies staging migrations, and seeds moderation
-terms. Build commands run as the restricted staging identity in a systemd
-sandbox, not as root or as the production owner. Root only manages files and
-service activation.
+terms. Build commands run as a separate restricted build identity in a systemd
+sandbox, not as root, the running application, or the production owner. This
+keeps the application from modifying a candidate release while it is prepared.
+Root only manages files and service activation. The installed deployer under
+`/usr/local/lib/pundad-staging/` is root-owned; later automation must invoke this
+reviewed copy rather than a privileged script supplied by a PR.
 
 Code is frozen into a root-owned release directory. A single atomic symlink
 switch activates the complete API/frontend pair, then staging restarts.

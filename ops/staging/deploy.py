@@ -9,6 +9,7 @@ from pathlib import Path
 import pwd
 import re
 import shutil
+import stat
 import subprocess
 import tarfile
 import time
@@ -26,12 +27,20 @@ if not all(re.fullmatch(r"[a-f0-9]{40}", sha) for sha in (args.api_sha, args.fro
     raise SystemExit("Supply full source/build commit SHAs.")
 if not (args.frontend_dir / "index.html").is_file():
     raise SystemExit("The CI frontend artifact must contain index.html.")
+if args.frontend_dir.is_symlink():
+    raise SystemExit("Frontend artifacts must not be symlinks.")
+for directory, dirs, files in os.walk(args.frontend_dir):
+    for name in dirs + files:
+        file = Path(directory) / name
+        mode = file.lstat().st_mode
+        if not stat.S_ISREG(mode) and not stat.S_ISDIR(mode):
+            raise SystemExit("Frontend artifacts must contain regular files and directories only.")
 
 lock = open("/run/pundad-staging-deploy.lock", "w")
 fcntl.flock(lock, fcntl.LOCK_EX)
 root = Path("/srv/pundad/staging")
-state = Path("/var/lib/pundad-staging")
-identity = pwd.getpwnam("pundad-staging")
+state = Path("/var/lib/pundad-staging-build")
+identity = pwd.getpwnam("pundad-staging-build")
 release_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + args.api_sha[:8] + "-" + args.frontend_sha[:8]
 build = state / "build" / release_id
 build.mkdir(mode=0o700)
@@ -52,11 +61,12 @@ for directory, dirs, files in os.walk(build):
 
 command = [
     "systemd-run", "--unit=pundad-staging-build-" + release_id.lower(), "--collect", "--wait", "--pipe",
-    "--property=User=pundad-staging", "--property=Group=pundad-staging",
+    "--property=User=pundad-staging-build", "--property=Group=pundad-staging-build",
     "--property=WorkingDirectory=" + str(api),
     "--property=EnvironmentFile=/etc/pundad/staging/api.env",
     "--property=ProtectHome=true", "--property=ProtectSystem=strict", "--property=PrivateTmp=true",
     "--property=NoNewPrivileges=true", "--property=MemoryMax=1G", "--property=CPUQuota=75%",
+    "--property=RuntimeMaxSec=900", "--property=KillMode=control-group",
     "--property=ReadWritePaths=" + str(state),
     "--setenv=PATH=/opt/pundad/node-v24.12.0/bin:/usr/local/bin:/usr/bin:/bin",
     "--setenv=npm_config_cache=" + str(state / "npm-cache"),

@@ -37,6 +37,7 @@ def account(name, home):
     return record
 
 app = account("pundad-staging", str(state_dir))
+builder = account("pundad-staging-build", "/var/lib/pundad-staging-build")
 account("cloudflared-staging", "/var/lib/cloudflared-staging")
 www = grp.getgrnam("www-data")
 
@@ -49,6 +50,10 @@ directory(config_dir, 0o750, 0, app.pw_gid)
 directory(state_dir, 0o700, app.pw_uid, app.pw_gid)
 for name in ("mail", "pm2", "build", "npm-cache"):
     directory(state_dir / name, 0o700, app.pw_uid, app.pw_gid)
+builder_state = Path("/var/lib/pundad-staging-build")
+directory(builder_state, 0o700, builder.pw_uid, builder.pw_gid)
+for name in ("build", "npm-cache"):
+    directory(builder_state / name, 0o700, builder.pw_uid, builder.pw_gid)
 directory(site_dir, 0o755)
 directory(site_dir / "releases", 0o755)
 directory(site_dir / "uploads", 0o2770, app.pw_uid, www.gr_gid)
@@ -58,7 +63,8 @@ if version != "v24.12.0":
     raise SystemExit("The reviewed Node 24.12.0 runtime is required.")
 directory(node_target / "bin", 0o755)
 directory(node_target / "lib/node_modules", 0o755)
-shutil.copy2(node_source / "bin/node", node_target / "bin/node")
+if not (node_target / "bin/node").exists():
+    shutil.copy2(node_source / "bin/node", node_target / "bin/node")
 if not (node_target / "lib/node_modules/npm").exists():
     shutil.copytree(node_source / "lib/node_modules/npm", node_target / "lib/node_modules/npm", symlinks=True)
 for name, script in [("npm", "npm-cli.js"), ("npx", "npx-cli.js")]:
@@ -116,5 +122,8 @@ for name in ("pundad-staging.service", "cloudflared-staging.service"):
     shutil.copyfile(source / name, destination)
     destination.chmod(0o644)
 shutil.copyfile(source / "nginx.conf", "/etc/nginx/sites-available/staging.pundad.app")
+directory(Path("/usr/local/lib/pundad-staging"), 0o755)
+shutil.copyfile(source / "deploy.py", "/usr/local/lib/pundad-staging/deploy.py")
+Path("/usr/local/lib/pundad-staging/deploy.py").chmod(0o644)
 run("systemctl", "daemon-reload")
 print(json.dumps({"database": "pundad_staging", "service_account": "pundad-staging", "credentials": "created privately; never printed", "services_started": False}))
