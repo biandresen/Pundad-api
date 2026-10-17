@@ -142,6 +142,22 @@ class Policy(unittest.TestCase):
         result = controller.targets(PairAPI(), config, "staging")
         self.assertTrue(all(t["pr"] == 2 and t["head"] == B for t in result.values()))
 
+    def test_recorded_success_must_match_the_actual_running_release(self):
+        import json
+        selected = {"environment": "production", "components": {"api": {"sha": A}, "frontend": {"sha": B}}}
+        old = controller.RELEASES
+        controller.RELEASES = controller.STATE
+        self.addCleanup(setattr, controller, "RELEASES", old)
+        directory = controller.STATE / "production/current/frontend"
+        directory.mkdir(parents=True)
+        metadata = directory / "__version.json"
+        metadata.write_text(json.dumps({"environment": "production", "apiSha": A, "frontendSha": B}))
+        self.assertTrue(controller.active_matches(selected))
+        metadata.write_text(json.dumps({"environment": "production", "apiSha": C, "frontendSha": B}))
+        self.assertFalse(controller.active_matches(selected))
+        metadata.unlink()
+        self.assertFalse(controller.active_matches(selected))
+
     def test_production_never_selects_a_pr(self):
         result = controller.targets(API("pull_request"), CONFIG, "production")
         self.assertEqual(result["api"]["event"], "push")
