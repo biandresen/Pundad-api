@@ -100,8 +100,10 @@ Fast Refresh exceptions matching the project's provider/hook module layout.
 
 ## Protect main after the first successful CI run
 
-The connected GitHub app cannot manage branch protection. Configure this in
-each repository's GitHub settings after the new check names have appeared.
+The connected GitHub app cannot manage branch protection. GitHub CLI was
+subsequently authenticated on the Pi and can configure it. The rules below
+explain the required setup and show how to apply the same policy manually in
+another repository after its check names have appeared.
 
 1. Open **Settings -> Branches -> Add branch protection rule**.
 2. Set the branch pattern to `main`.
@@ -128,13 +130,14 @@ It will use a separate staging API, PostgreSQL database, credentials, uploads,
 and controlled email delivery. Production data and credentials must not be
 available to PR preview code.
 
-Deployment transport still needs configuration. The Pi's current SSH setup
-cannot authenticate to GitHub for pushes, and the connected GitHub app returned
-403 for repository writes and branch-protection access. The local CI changes
-are ready, but publishing and live CI runs require Git authentication on the Pi.
+Deployment transport still needs configuration. The connected GitHub app
+returned 403 for repository writes and branch-protection access. GitHub CLI was
+installed on the Pi and authenticated over HTTPS using browser authorization;
+both development branches are published and their first CI runs passed.
 
-Install GitHub CLI using your operating system's package manager, then run this
-in your own Pi terminal (the browser authorization can happen on the laptop):
+For a new machine, install GitHub CLI using your operating system's package
+manager, then run this in your own terminal (browser authorization can happen
+on the laptop):
 
 ```bash
 gh auth login --hostname github.com --git-protocol https --web --scopes workflow
@@ -155,10 +158,15 @@ git remote set-url origin https://github.com/biandresen/Pundad-api.git
 git remote set-url origin https://github.com/biandresen/Pundad-app.git
 ```
 
-After reviewing the local commits, publish each development branch and open a
-PR targeting main. The frontend branch also descends from an earlier local
-commit containing PWA support and the verification-page text-color fix; inspect
-that commit when reviewing the full comparison with GitHub's main branch.
+The published pull requests are:
+
+- [Backend #1](https://github.com/biandresen/Pundad-api/pull/1)
+- [Frontend #187](https://github.com/biandresen/Pundad-app/pull/187)
+
+The frontend branch also descends from an earlier local commit containing PWA
+support and the verification-page text-color fix; inspect that commit when
+reviewing the full comparison with GitHub's main branch. These PRs are not
+merged automatically, and the CI workflows do not deploy to production.
 
 Git push authentication is separate from an authenticated network route from
 GitHub Actions back to the Pi. Choose a restricted deployment connection or

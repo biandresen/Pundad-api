@@ -105,7 +105,7 @@ services and must not require production secrets.
 
 ## Remaining steps
 
-1. Publish the prepared CI workflows, confirm live runs, and protect `main`.
+1. Review and merge the CI pull requests after all required checks pass.
 2. Configure staging DNS/TLS, isolated API/database/uploads, and email capture.
 3. Deploy trusted PRs to a shared staging slot with a deployment lock.
 4. Move production processes to versioned release directories, then enable
@@ -116,8 +116,7 @@ or outbound artifact retrieval) must be chosen before deployment automation.
 
 ## Continuous integration
 
-CI workflows for lint, tests, migration checks, and build artifacts are prepared
-and verified locally. Publishing and branch protection still require GitHub
-authentication/settings. See
+CI workflows for lint, tests, migration checks, and build artifacts are published
+in pull requests, and their first GitHub runs passed. See
 [the CI guide](continuous-integration.md) for the workflows, local commands,
 branch protection settings, and the public staging plan.
