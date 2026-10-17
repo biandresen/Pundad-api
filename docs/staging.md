@@ -87,6 +87,18 @@ After local HTTP readiness is verified, the DNS route for staging.pundad.app
 is pointed to the new tunnel. Its configuration contains only that hostname
 and a catch-all 404. No existing DNS record should be overwritten silently.
 
+In Cloudflare DNS for `pundad.app`, create a **proxied CNAME** named `staging`
+pointing to `<staging-tunnel-id>.cfargotunnel.com`, with TTL Auto. The tunnel
+must belong to the same Cloudflare account as the domain. The tunnel ID is
+not a credential; its private credentials file must never be shared.
+
+Check the zone authorized by `cloudflared` before using `tunnel route dns`.
+An account certificate authorized for another zone can cause the CLI to
+append that zone to the requested hostname. Successful CLI output alone is
+not proof that the intended hostname exists. If the certificate cannot edit
+`pundad.app`, add the record in that zone's dashboard, then verify the exact
+public hostname and HTTPS readiness endpoint above.
+
 ## Manual deployment of an explicitly reviewed revision
 
 This milestone provides an operator-run deployer. Automatic PR deployment is
