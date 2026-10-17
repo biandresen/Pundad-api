@@ -1,0 +1,11 @@
+[Unit]
+Description=Check PunDad GitHub CI for automatic deployments every minute
+
+[Timer]
+OnBootSec=90s
+OnUnitInactiveSec=60s
+AccuracySec=5s
+Unit=pundad-deploy.service
+
+[Install]
+WantedBy=timers.target

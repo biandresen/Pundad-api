@@ -62,7 +62,7 @@ the TypeScript/Vite production build. The tests cover rate-limit messages,
 Retry-After countdowns, verification-related status codes, and network errors.
 They are unit tests; browser interaction tests are a later addition.
 
-The build uses relative API and upload origins. Nginx will route those paths
+The build uses relative API and upload origins. Nginx routes those paths
 to the matching API in staging or production. The resulting `dist/` is uploaded
 as a workflow artifact named for the checked commit and retained for seven
 days. An artifact is a saved build result, not an automatic deployment.
@@ -123,12 +123,17 @@ checks a requirement. GitHub Actions reports and PRs show the exact run and
 commit being checked. Inspect failed logs, fix the branch, and publish another
 commit; the PR updates and checks rerun.
 
-## Next milestone: public staging
+## GitHub access and rollout status
 
-The agreed staging address is **staging.pundad.app**, publicly accessible.
-It will use a separate staging API, PostgreSQL database, credentials, uploads,
-and controlled email delivery. Production data and credentials must not be
-available to PR preview code.
+The agreed staging address, **https://staging.pundad.app**, is now publicly
+accessible. It has a separate API/worker, PostgreSQL database/login, credentials,
+uploads, and private email capture. Its operator-run release deployer and public
+HTTP account flow have been verified. See [the staging runbook](staging.md) for
+the full installation and deployment procedure. Production data was not copied.
+
+The baseline CI PRs below were merged and main-branch protections configured.
+Automatic staging/production deployment is still pending; the current workflows
+stop after checks and frontend artifact upload.
 
 Deployment transport still needs configuration. The connected GitHub app
 returned 403 for repository writes and branch-protection access. GitHub CLI was
@@ -158,15 +163,16 @@ git remote set-url origin https://github.com/biandresen/Pundad-api.git
 git remote set-url origin https://github.com/biandresen/Pundad-app.git
 ```
 
-The published pull requests are:
+The merged baseline CI pull requests are:
 
 - [Backend #1](https://github.com/biandresen/Pundad-api/pull/1)
 - [Frontend #187](https://github.com/biandresen/Pundad-app/pull/187)
 
 The frontend branch also descends from an earlier local commit containing PWA
 support and the verification-page text-color fix; inspect that commit when
-reviewing the full comparison with GitHub's main branch. These PRs are not
-merged automatically, and the CI workflows do not deploy to production.
+reviewing that baseline change. Both baseline PRs were merged by the operator;
+the CI workflows do not deploy to production. The original production checkout
+was not updated or restarted by those merges.
 
 Git push authentication is separate from an authenticated network route from
 GitHub Actions back to the Pi. Choose a restricted deployment connection or
@@ -177,5 +183,6 @@ restricted resource access; a separate database alone does not isolate arbitrary
 PR code from production files. Only trusted PRs should reach that deployment
 path. Public/fork PRs can run ordinary CI without receiving deployment secrets.
 
-These workflows stop after checks/build artifacts. Staging deployment and
-automatic production release/rollback are not implemented by this CI milestone.
+These workflows stop after checks/build artifacts. Manual staging deployment
+is implemented separately in the backend's `ops/staging/` tooling. Automatic
+staging deployment and production release/rollback are not enabled yet.

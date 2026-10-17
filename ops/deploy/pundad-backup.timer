@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily PunDad production backup
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 Europe/Oslo
+Persistent=true
+Unit=pundad-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -20,6 +20,7 @@ parser.add_argument("--api-archive", type=Path, required=True)
 parser.add_argument("--frontend-dir", type=Path, required=True)
 parser.add_argument("--api-sha", required=True)
 parser.add_argument("--frontend-sha", required=True)
+parser.add_argument("--selection-file", type=Path)
 args = parser.parse_args()
 if os.geteuid() != 0:
     raise SystemExit("Run the reviewed staging deployer with sudo.")
@@ -71,12 +72,17 @@ command = [
     "--setenv=PATH=/opt/pundad/node-v24.12.0/bin:/usr/local/bin:/usr/bin:/bin",
     "--setenv=npm_config_cache=" + str(state / "npm-cache"),
     "/bin/sh", "-eu", "-c",
-    "npm ci --no-audit --no-fund; "
+    "npm ci --include=dev --no-audit --no-fund; "
     "node --import ./src/config/stagingEnvironment.js node_modules/prisma/build/index.js generate; "
     "node --import ./src/config/stagingEnvironment.js node_modules/prisma/build/index.js migrate deploy; "
     "node --import ./src/config/stagingEnvironment.js src/config/seed.js",
 ]
 subprocess.run(command, check=True)
+if args.selection_file:
+    selection = json.loads(args.selection_file.read_text())
+    if selection["environment"] != "staging" or selection["components"]["api"]["sha"] != args.api_sha or selection["components"]["frontend"]["sha"] != args.frontend_sha:
+        raise ValueError("Staging inputs do not match selection")
+    subprocess.run(["/usr/bin/python3", "/usr/local/lib/pundad-deploy/controller.py", "verify", "--selection-file", str(args.selection_file)], check=True)
 metadata = {"environment": "staging", "apiSha": args.api_sha, "frontendSha": args.frontend_sha, "release": release_id}
 (build / "frontend/__version.json").write_text(json.dumps(metadata) + "\n")
 
@@ -117,6 +123,12 @@ try:
     activate(release)
     if not ready():
         raise RuntimeError("Staging API did not become ready.")
+    if args.selection_file:
+        import sys
+        sys.path.insert(0, "/usr/local/lib/pundad-deploy")
+        from production import worker_health
+        time.sleep(3)
+        worker_health("staging")
     enabled = Path("/etc/nginx/sites-enabled/staging.pundad.app")
     if not enabled.exists():
         enabled.symlink_to("/etc/nginx/sites-available/staging.pundad.app")

@@ -6,6 +6,13 @@ project. Replace `myapp` names and example paths with your own project names.
 Example creation commands are for a new project; do not recreate the existing
 PunDad resources.
 
+This guide preserves the explanation of the first development milestone. For
+the complete current deployment setup, continue with
+[the staging runbook](staging.md), updated after public HTTPS verification on
+17 October 2026. It includes CI/artifact selection, host provisioning, tunnel
+credentials and DNS, services, deployments, rollback, and replication guidance.
+The everyday status/checklist is in [development.md](development.md).
+
 ## 1. Understand the independent parts
 
 | Part | What it provides |
@@ -477,9 +484,16 @@ No production data was copied. The original production backend checkout, its
 were left in place. Source changes in the new worktrees had not been committed
 or pushed when this guide was written.
 
-CI workflows, branch protection, staging, shadow-database configuration, and
-automated production releases/rollback are later steps. They have not been
-implemented by this first milestone.
+The table and paragraphs above record completion of the first milestone, not
+the present rollout status. Since then, the baseline development/CI changes
+were committed, published, and merged; CI and branch protection were enabled;
+and the same `-dev` worktrees moved to `chore/staging-runtime` for the now-live
+public staging system. No additional editable development directories were
+created for staging. Staging runs installed releases under `/srv/pundad/staging`.
+
+Shadow-database setup, automatic PR deployment, and production releases/rollback
+are still pending. See [the staging runbook](staging.md) for the implemented
+stages, exact commands and verification results, and what remains to automate.
 
 ## References
 
