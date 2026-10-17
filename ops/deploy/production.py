@@ -141,8 +141,10 @@ def main():
         try:
             if previous is None:
                 legacy_stopped = True
-                legacy("stop", "pundad-api", "pundad-worker")
-                legacy("delete", "pundad-api", "pundad-worker")
+                for name in ("pundad-api", "pundad-worker"):
+                    legacy("stop", name)
+                for name in ("pundad-api", "pundad-worker"):
+                    legacy("delete", name)
                 legacy("save", "--force")
             activate(release)
             if not ready():
