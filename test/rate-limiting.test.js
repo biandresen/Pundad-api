@@ -205,7 +205,7 @@ test("registration allows ten attempts and recovers after fifteen minutes", asyn
   for (let attempt = 1; attempt <= 10; attempt++) {
     const response = await register();
     assert.equal(response.status, 400, `registration attempt ${attempt}`);
-    assert.equal(response.body.message, "Validation failed");
+    assert.equal(response.body.code, "TURNSTILE_FAILED");
   }
   const blocked = await register();
   assert.equal(blocked.status, 429);
