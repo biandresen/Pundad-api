@@ -4,7 +4,6 @@ import loginUserValidator from "../validation/loginValidator.js";
 import authController from "../controllers/authController.js";
 import asyncErrorHandler from "../utils/asyncErrorHandler.js";
 import checkValidation from "../middleware/checkValidation.js";
-import verifyRegistrationTurnstile from "../middleware/verifyRegistrationTurnstile.js";
 import resetPasswordValidator from "../validation/resetPasswordValidator.js";
 import updatePasswordValidator from "../validation/updatePasswordValidator.js";
 import resendVerificationValidator from "../validation/resendVerificationValidator.js";
@@ -26,7 +25,6 @@ router.get("/ready", authController.readiness);
 router.post(
   "/register",
   registerLimiter,
-  asyncErrorHandler(verifyRegistrationTurnstile),
   registerUserValidator,
   checkValidation,
   asyncErrorHandler(authController.registerUser)
