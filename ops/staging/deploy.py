@@ -11,9 +11,13 @@ import re
 import shutil
 import stat
 import subprocess
+import sys
 import tarfile
 import time
 import urllib.request
+
+sys.path.insert(0, "/usr/local/lib/pundad-deploy")
+from common import prepare_frontend_assets, switch_current
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--api-archive", type=Path, required=True)
@@ -85,6 +89,9 @@ if args.selection_file:
     subprocess.run(["/usr/bin/python3", "/usr/local/lib/pundad-deploy/controller.py", "verify", "--selection-file", str(args.selection_file)], check=True)
 metadata = {"environment": "staging", "apiSha": args.api_sha, "frontendSha": args.frontend_sha, "release": release_id}
 (build / "frontend/__version.json").write_text(json.dumps(metadata) + "\n")
+current = root / "current"
+previous = current.resolve() if current.is_symlink() else None
+prepare_frontend_assets(root, build / "frontend", previous)
 
 # Freeze code as root-owned, read-only-to-the-service release files.
 for directory, dirs, files in os.walk(build, followlinks=False):
@@ -98,14 +105,9 @@ for directory, dirs, files in os.walk(build, followlinks=False):
             file.chmod(mode)
 release = root / "releases" / release_id
 shutil.move(str(build), release)
-current = root / "current"
-previous = current.resolve() if current.is_symlink() else None
 
 def activate(target):
-    link = root / ".current-next"
-    link.unlink(missing_ok=True)
-    link.symlink_to(target, target_is_directory=True)
-    os.replace(link, current)
+    switch_current(root, target)
     subprocess.run(["systemctl", "restart", "pundad-staging.service"], check=True)
 
 def ready():
@@ -124,8 +126,6 @@ try:
     if not ready():
         raise RuntimeError("Staging API did not become ready.")
     if args.selection_file:
-        import sys
-        sys.path.insert(0, "/usr/local/lib/pundad-deploy")
         from production import worker_health
         time.sleep(3)
         worker_health("staging")
@@ -141,7 +141,5 @@ except Exception:
     raise
 
 if previous:
-    link = root / "previous"
-    link.unlink(missing_ok=True)
-    link.symlink_to(previous, target_is_directory=True)
+    switch_current(root, previous, name="previous")
 print(json.dumps(metadata))
