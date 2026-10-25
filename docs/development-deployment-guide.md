@@ -1475,10 +1475,92 @@ does not install or activate them.
 | CLI cannot call GitHub | Operator CLI authentication/access, API/rate limits, journal; renew credentials locally |
 | Old CLI PR edit hits deprecated Projects fields | Installed CLI 2.46 hit this; structured REST `gh api --method PATCH ... --input <json-file>` was used |
 
-Frontend index and sw.js use no-cache; hashed assets cache seven days; missing
-assets return 404 and React navigation routes fall back to index.html. Service
-worker/browser caches belong to each hostname separately. A staging noindex
-header or robots rule is not an access-control mechanism.
+Frontend index, sw.js, and manifest.webmanifest use no-cache. The manifest has
+an explicit `application/manifest+json` type independent of the host MIME map.
+Hashed `/assets/` responses use
+`public, max-age=31536000, immutable`; missing assets return 404 with no-store,
+never the SPA index. `__version.json` and the artifact's `__build.json` use
+no-store. React navigation routes fall back to the revalidated index.html.
+Service-worker/browser caches belong to each hostname separately. A staging
+noindex header or robots rule is not an access-control mechanism.
+
+#### Frontend release continuity (issue #199)
+
+The source deployment path now prepares the new release's
+`frontend/.retained-assets/assets/` **before** atomically selecting `current`.
+It copies only hashed files from the immediately preceding release's native
+`frontend/assets/`, never that release's retained cache, index, service worker,
+or metadata. Current assets win lookup; Nginx then checks the retained directory
+and returns an actual 404 on a miss. The retained directory cannot be requested
+directly. A release contains at most its own asset generation and one previous
+generation; copying is limited to 20,000 files / 250 MiB. Same-name hashed assets
+with different bytes, links/special files, reserved artifact paths, and a prior
+release outside this environment are rejected before activation.
+
+`__version.json` continues to identify the verified GitHub release pair;
+`__build.json` identifies the exact Vite artifact for browser recovery. A
+repeated build of one commit can produce a different artifact identity. Neither
+metadata file is inherited from the preceding release.
+
+Rollback selects the preceding directory with its own native/retained assets
+intact. The failed candidate's assets are not added to the restored release.
+An already open client from that failed candidate may need bounded browser
+recovery, just as a client older than the retained window does. Atomic
+current/previous symlink replacement and the environment deploy lock protect
+activation and pruning; cleanup retains the three newest release directories
+plus both selected targets, including when newer failed candidates exist.
+Native and copied assets live within those directories, so pruning bounds both.
+The unchanged artifact digest, current-head/provenance checks, private backups,
+build identities, and application readiness/rollback checks still apply.
+
+**Installation is a separate operator action after review.** Repository edits
+do not update the installed privileged helpers or Nginx. Pause automatic
+deployment and wait for an idle controller as described in section 20. Install
+reviewed copies of these files together, preserving their root ownership:
+
+| Repository file | Installed destination |
+| --- | --- |
+| `ops/deploy/common.py`, `controller.py`, `production.py` | `/usr/local/lib/pundad-deploy/` (0644) |
+| `ops/staging/deploy.py` | `/usr/local/lib/pundad-staging/deploy.py` (0644) |
+| `ops/deploy/nginx.conf` | `/etc/pundad/production/nginx.conf` (root:pi 0640), and the actual production vhost target |
+| `ops/staging/nginx.conf` | `/etc/nginx/sites-available/staging.pundad.app` |
+
+The staging provisioner also installs the shared `common.py`; an existing host
+needs that reviewed shared helper before its new staging deployer runs. Avoid
+rerunning broad provisioners merely to install this focused change. Compare the
+reviewed Nginx templates with the installed virtual hosts, preserve any separately
+managed transport/site settings, run `sudo nginx -t`, and gracefully reload Nginx
+only after validation. Production activation copies its private template again,
+so updating only the enabled vhost would be overwritten. Staging activation
+validates/reloads its already installed vhost. No app restart is required just
+to install these Nginx changes. Deploy the reviewed frontend through the normal
+verified artifact path after the tooling/configuration is installed, then resume
+automation. Do not modify private API environment files for this fix.
+
+The regression in `ops/deploy/tests/test_nginx_assets.py` starts a separate
+unprivileged Nginx with temporary production/staging releases and an ephemeral
+loopback listener. It checks current/retained JS and CSS status/MIME, immutable
+asset headers, HTML/worker/metadata cache policy, error responses, and rollback.
+Run it alongside policy/retention checks with:
+
+```bash
+python3 -m unittest discover -s ops/deploy/tests
+```
+
+Nginx is required for the HTTP test (it is explicitly skipped when absent).
+It does not contact or reload the live server. The frontend's maintained browser
+regression exercises two actual Vite production builds and the same deployment
+helper/templates; see the frontend testing strategy for its invocation.
+
+The issue's failed dynamic import is consistent with the verified old lookup:
+keeping a `previous` directory did not make its assets reachable through
+`current/frontend`. The readable installed production/staging virtual hosts
+already rejected asset misses before this change, as did the source templates.
+Their current contents therefore do **not** prove that Nginx produced the
+reported CSS-as-HTML response. Service-worker response caching and the historical
+delivery path need separate evidence. Cloudflare tunnel/DNS configuration is
+unchanged; after installation, inspect public responses as well as loopback
+responses to confirm the effective edge cache policy.
 
 Python's default HTTP user agent received Cloudflare 403/error 1010 during
 verification while curl/accepted client requests succeeded. No edge protection

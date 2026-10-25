@@ -10,7 +10,7 @@ import shutil
 import tempfile
 import time
 
-from common import extract_zip, fingerprint, sha, write_json
+from common import extract_zip, fingerprint, prune_releases, sha, write_json
 
 CONFIG = Path("/etc/pundad/deploy.json")
 STATE = Path("/var/lib/pundad-deploy")
@@ -234,14 +234,7 @@ def maintain():
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:
                 continue
-            root = Path("/srv/pundad") / environment
-            protected = {p.resolve() for p in (root / "current", root / "previous") if p.is_symlink()}
-            releases = root / "releases"
-            if releases.exists():
-                rows = sorted([p for p in releases.iterdir() if p.is_dir() and not p.is_symlink()], key=lambda p: p.name, reverse=True)
-                for path in rows[3:]:
-                    if path.resolve() not in protected:
-                        shutil.rmtree(path)
+            prune_releases(RELEASES / environment)
             builds = Path("/var/lib/pundad-" + environment + "-build/build")
             if builds.exists():
                 rows = sorted([p for p in builds.iterdir() if p.is_dir() and not p.is_symlink()], key=lambda p: p.stat().st_mtime, reverse=True)

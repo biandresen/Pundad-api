@@ -14,7 +14,7 @@ import time
 import urllib.request
 
 from backup import snapshot
-from common import extract_api, sha
+from common import extract_api, prepare_frontend_assets, sha, switch_current
 
 ROOT = Path("/srv/pundad/production")
 CODE = Path("/usr/local/lib/pundad-deploy")
@@ -115,6 +115,9 @@ def main():
         run("/usr/bin/python3", str(CODE / "controller.py"), "verify", "--selection-file", str(args.selection_file))
         metadata = {"environment": "production", "apiSha": args.api_sha, "frontendSha": args.frontend_sha, "release": identifier}
         (build / "frontend/__version.json").write_text(json.dumps(metadata) + "\n")
+        current = ROOT / "current"
+        previous = current.resolve() if current.is_symlink() else None
+        prepare_frontend_assets(ROOT, build / "frontend", previous)
         for directory, dirs, files in os.walk(build):
             os.chown(directory, 0, 0)
             os.chmod(directory, 0o755)
@@ -125,17 +128,12 @@ def main():
                     path.chmod(0o755 if path.is_dir() or path.stat().st_mode & 0o111 else 0o644)
         release = ROOT / "releases" / identifier
         shutil.move(str(build), release)
-        current = ROOT / "current"
-        previous = current.resolve() if current.is_symlink() else None
         nginx_path = Path("/etc/nginx/sites-enabled/pundad.app").resolve()
         old_nginx = nginx_path.read_bytes()
         legacy_stopped = False
 
         def activate(target):
-            link = ROOT / ".current-next"
-            link.unlink(missing_ok=True)
-            link.symlink_to(target, target_is_directory=True)
-            os.replace(link, current)
+            switch_current(ROOT, target)
             run("systemctl", "restart", "pundad-production.service")
 
         try:
@@ -170,9 +168,7 @@ def main():
             run("systemctl", "reload", "nginx")
             raise
         if previous:
-            link = ROOT / "previous"
-            link.unlink(missing_ok=True)
-            link.symlink_to(previous, target_is_directory=True)
+            switch_current(ROOT, previous, name="previous")
         print(json.dumps(metadata), flush=True)
 
 
