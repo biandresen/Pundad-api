@@ -12,6 +12,8 @@ const defaults = {
   EMAIL_DELIVERY: "capture", EMAIL_CAPTURE_DIR: "/var/lib/pundad-staging/mail",
   JWT_ACCESS_SECRET: "a".repeat(64), JWT_REFRESH_SECRET: "b".repeat(64),
   RESEND_API_KEY: "",
+  TURNSTILE_SECRET_KEY: "0x4AAAAAA-private-staging-fixture",
+  TURNSTILE_ALLOWED_HOSTNAMES: "staging.pundad.app",
 };
 
 function run(overrides = {}) {
@@ -33,6 +35,9 @@ for (const [name, config] of [
   ["real email credentials", { RESEND_API_KEY: "private-provider-key" }],
   ["production port", { PORT: "4000" }],
   ["non-production cookie configuration", { NODE_ENV: "development" }],
+  ["missing Turnstile secret", { TURNSTILE_SECRET_KEY: "" }],
+  ["Cloudflare test secret", { TURNSTILE_SECRET_KEY: "1x0000000000000000000000000000000AA" }],
+  ["production Turnstile hostnames", { TURNSTILE_ALLOWED_HOSTNAMES: "pundad.app,www.pundad.app" }],
 ]) {
   test(`staging rejects ${name} without exposing credentials`, () => {
     const result = run(config);

@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { parse } from "dotenv";
 
+const TURNSTILE_TEST_SECRET = "1x0000000000000000000000000000000AA";
+
 // Loaded with --import before the API, worker, or database CLI imports anything.
 // Production continues to use its existing environment and entry points.
 const envFile = path.resolve(".env.development");
@@ -43,6 +45,10 @@ if (path.resolve(config.UPLOADS_DIR || "") !== path.resolve("uploads")) {
 
 if (config.EMAIL_DELIVERY !== "console") {
   throw new Error("Development commands require EMAIL_DELIVERY=console.");
+}
+
+if (config.TURNSTILE_SECRET_KEY !== TURNSTILE_TEST_SECRET) {
+  throw new Error("Development commands require Cloudflare's published Turnstile test secret.");
 }
 
 for (const key of ["JWT_ACCESS_SECRET", "JWT_REFRESH_SECRET"]) {
