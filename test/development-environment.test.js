@@ -16,6 +16,7 @@ const defaults = {
   EMAIL_DELIVERY: "console",
   JWT_ACCESS_SECRET: "a".repeat(64),
   JWT_REFRESH_SECRET: "b".repeat(64),
+  TURNSTILE_SECRET_KEY: "1x0000000000000000000000000000000AA",
 };
 
 function run(overrides = {}, writeConfig = true) {
@@ -61,6 +62,8 @@ for (const [label, config, message] of [
   ["production uploads", { UPLOADS_DIR: "/var/www/pundad-uploads" }, /checkout's uploads directory/],
   ["production port", { PORT: "4000" }, /PORT=4001/],
   ["remote database", { DATABASE_URL: "postgresql://pundad_dev:hidden@example.org/pundad_dev" }, /local pundad_dev/],
+  ["missing Turnstile test secret", { TURNSTILE_SECRET_KEY: "" }, /Turnstile test secret/],
+  ["real Turnstile secret", { TURNSTILE_SECRET_KEY: "0x4AAAAAA-private-fixture" }, /Turnstile test secret/],
 ]) {
   test(`development commands refuse ${label}`, () => {
     const result = run(config);
