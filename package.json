@@ -14,6 +14,7 @@
     "dev:runOnce": "node --import ./src/config/developmentEnvironment.js src/jobs/runOnce.js",
     "db:dev:deploy": "node --import ./src/config/developmentEnvironment.js node_modules/prisma/build/index.js migrate deploy",
     "db:dev:seed": "node --import ./src/config/developmentEnvironment.js src/config/seed.js",
+    "db:dev:seed:badges": "node --import ./src/config/developmentEnvironment.js src/config/seedBadgeLeaderboardDemo.js",
     "prod:test:api": "PORT=4000 NODE_ENV=production LOG_LEVEL=info node src/server.js",
     "prod:test:worker": "NODE_ENV=production LOG_LEVEL=info node src/jobs/worker.js",
     "prod:test:runOnce": "NODE_ENV=production LOG_LEVEL=info node src/jobs/runOnce.js",

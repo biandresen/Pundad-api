@@ -2,6 +2,7 @@ import prisma from "../config/prismaClient.js";
 import CustomError from "../utils/CustomError.js";
 import successResponse from "../utils/successResponse.js";
 import badgeService from "../services/badgeService.js";
+import { activeCurrentBadgeWhere } from "../utils/activeBadges.js";
 
 async function getMyCurrentBadges(req, res, next) {
     const userId = Number(req.user?.id);
@@ -11,7 +12,7 @@ async function getMyCurrentBadges(req, res, next) {
     if (!language) return next(new CustomError(500, "Language middleware not configured"));
 
     const badges = await prisma.currentUserBadge.findMany({
-      where: { userId, language },
+      where: { userId, ...activeCurrentBadgeWhere(language) },
       orderBy: { since: "desc" },
     });
 

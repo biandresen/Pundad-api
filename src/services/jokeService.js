@@ -3,6 +3,7 @@ import prisma from "../config/prismaClient.js";
 import { FEATURED_JOKE } from "../constants.js";
 import { startOfUtcDay } from "../utils/date.js";
 import { normalizeLanguage } from "../utils/language.js";
+import { activeCurrentBadgeWhere } from "../utils/activeBadges.js";
 
 /**
  * Base user fields always returned with jokes
@@ -27,9 +28,7 @@ function buildIncludedUser(language) {
   return {
     ...BASE_USER_SELECT,
     currentBadges: {
-      where: {
-        language: lang,
-      },
+      where: activeCurrentBadgeWhere(lang),
       select: {
         id: true,
         badge: true,

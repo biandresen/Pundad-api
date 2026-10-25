@@ -1,10 +1,9 @@
 import { matchedData } from "express-validator";
 import jokeService from "../services/jokeService.js";
-import userService from "../services/userService.js";
+import { getStreakBonusProgress, recordDailyJokeView as recordDailyView } from "../services/dailyStreakService.js";
 import CustomError from "../utils/CustomError.js";
 import normalizeTags from "../utils/normalizeTags.js";
 import successResponse from "../utils/successResponse.js";
-import { isSameUtcDay, isYesterdayUtc } from "../utils/date.js";
 import { buildPageMeta } from "../utils/paginationMeta.js";
 import { moderateFields } from "../utils/moderation.js";
 import logService from "../services/logService.js";
@@ -403,32 +402,7 @@ async function recordDailyJokeView(req, res, next) {
   }
 
   const userId = Number(currentUser.id);
-  const user = await userService.getUserById(userId);
-  if (!user) return next(new CustomError(404, "User not found"));
-  if (!user.active) return next(new CustomError(403, "User is inactive"));
-
-  const now = new Date();
-  const last = user.dailyJokeLastViewedAt;
-
-  let newStreak = user.dailyJokeStreak ?? 0;
-
-  if (!last) {
-    newStreak = 1;
-  } else if (isSameUtcDay(last, now)) {
-    newStreak = user.dailyJokeStreak ?? 0;
-  } else if (isYesterdayUtc(last, now)) {
-    newStreak = (user.dailyJokeStreak ?? 0) + 1;
-  } else {
-    newStreak = 1;
-  }
-
-  const best = Math.max(user.dailyJokeBestStreak ?? 0, newStreak);
-
-  const updated = await userService.updateUser(userId, {
-    dailyJokeStreak: newStreak,
-    dailyJokeBestStreak: best,
-    dailyJokeLastViewedAt: now,
-  });
+  const updated = await recordDailyView({ userId, language: req.language });
 
   await logService.createProductEvent({
     userId,
@@ -443,11 +417,12 @@ async function recordDailyJokeView(req, res, next) {
     userAgent: req.headers["user-agent"] || null,
   });
 
-  return successResponse(res, 200, "Daily joke view recorded", {
-    dailyJokeStreak: updated.dailyJokeStreak,
-    dailyJokeBestStreak: updated.dailyJokeBestStreak,
-    dailyJokeLastViewedAt: updated.dailyJokeLastViewedAt,
-  });
+  return successResponse(res, 200, "Daily joke view recorded", updated);
+}
+
+async function getDailyStreak(req, res) {
+  const data = await getStreakBonusProgress({ userId: Number(req.user.id), language: req.language });
+  return successResponse(res, 200, "Daily streak bonus progress retrieved", data);
 }
 
 export default {
@@ -457,6 +432,7 @@ export default {
   getRandomJoke,
   getDailyJoke,
   recordDailyJokeView,
+  getDailyStreak,
   getJoke,
   createJoke,
   updateJoke,

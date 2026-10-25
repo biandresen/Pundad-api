@@ -79,13 +79,29 @@ web_modules/
 .env
 .env.*
 !.env.example
-!.env.development.example
+!.env.*.example
 
 # Personal editor preferences
 /.vscode/settings.json
 
 # Local AWS configuration
 /.aws/
+
+# Local agent tooling and analysis caches
+/.agents/
+/.codex/
+.fallow/
+
+# Browser automation artifacts
+.playwright-cli/
+playwright-report/
+test-results/
+/output/playwright/
+
+# Python deployment-tool caches and generated release archives
+__pycache__/
+*.py[cod]
+/api.tar
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache

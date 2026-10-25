@@ -526,6 +526,18 @@ npm run db:dev:deploy
 npm run db:dev:seed
 ```
 
+For badge and leaderboard UI review with populated NO/EN examples:
+
+```bash
+npm run db:dev:seed:badges
+# Later, remove only the demo accounts and their fixture content:
+npm run db:dev:seed:badges -- --clean
+```
+
+Apply migrations first when the code introduces new database fields. The demo
+accounts, login details, reset behavior and worker interaction are documented
+in the [badge testing guide](badge-leaderboard-testing.md#try-the-feature-on-the-development-server).
+
 These guarded commands do not reset a database. Development shadow-database
 configuration for authoring new Prisma migrations has **not** been set up. Do
 not follow old instructions that run an unqualified `prisma migrate dev`.
@@ -823,6 +835,37 @@ Enter its password privately. `-U` selects who connects; `-d` selects where.
 Do not print a connection URL/private env file into shared output, or run a
 reset/cleanup against a database selected from an unchecked shell environment.
 
+#### Badge scoring rollout
+
+The approved daily Fastest Growing policy requires migration
+`20261025151000_fastest_growing_daily_windows` and a regenerated Prisma client.
+Set the same non-secret `FASTEST_GROWING_DAILY_START_UTC=YYYY-MM-DD` in the API
+and worker environments before a future UTC cutover day. Stop old worker
+versions before that day. After a daily checkpoint exists, removing or changing
+the date fails closed. Legacy award history and scores are preserved.
+
+The worker keeps hourly discovery and finalizes completed daily scoring windows
+on boot and hourly for NO and EN, processing up to 31 missing days per language
+per run. See the [scoring rule and rollout details](fastest-growing-recommendation.md)
+for cutover validation, manual catch-up, validity intervals and historical-data
+limits. No actual environment files are changed by this implementation.
+
+The approved streak bonus additionally requires migration
+`20261025180000_language_streak_bonuses` and client regeneration. Configure
+`STREAK_BONUS_START_UTC=YYYY-MM-DD` on all API instances for an announced future
+UTC day; the empty example value leaves it disabled. New language progress
+starts at the first real view on/after that day, without converting global
+streaks or reconstructing old visits. Keep the date fixed after progress starts.
+The local development environment is scheduled for **2026-10-26 00:00 UTC**;
+production/staging configuration is unchanged. The additive migration has been
+applied only to the local development database and isolated test schemas.
+
+Deploy matching API versions before activation. Bonuses are awarded atomically
+on each seventh consecutive-day view per language, so no worker schedule or
+catch-up job is required. The frontend shows the selected language's progress;
+earned points are retained when progress resets. See the
+[streak policy, API contract, and rollout](leaderboard-streak-design.md).
+
 ### 13. Checks and main-branch protection
 
 Both repositories use `.github/workflows/ci.yml` and Node **24.12.0** from
@@ -834,12 +877,17 @@ not given to these jobs.
 | Required check | What it verifies |
 | --- | --- |
 | Backend: API checks | ESLint, Prisma schema validation/client generation, Node application tests, Python deployment policy/archive/cache tests; archives exact checked API source |
-| Backend: Database migrations | Disposable PostgreSQL 17, all migrations, status/schema comparison, moderation seed |
-| Frontend: Frontend checks | ESLint, API-error unit tests, TypeScript/Vite production build and artifact upload |
+| Backend: Database migrations | Disposable PostgreSQL 17, all migrations, status/schema comparison, moderation seed, badge/featured/leaderboard/post/streak integration tests |
+| Frontend: Frontend checks | ESLint, API-error/badge/moderation/registration configuration tests, TypeScript/Vite production build and artifact upload |
 
-API HTTP tests use database/email substitutes and Node's experimental module
-mocking through the `npm test` script; use the pinned Node runtime. Migration CI
-uses its own temporary runner database, never the Pi's production database. The backend artifact is
+Existing API HTTP tests use database/email substitutes and Node's experimental
+module mocking through the `npm test` script; use the pinned Node runtime.
+New PostgreSQL integration tests require an explicit `TEST_DATABASE_URL` whose
+database name ends in `_test`; each suite creates and drops an isolated migrated
+schema. Without that variable, `npm test` skips those suites. The migration CI
+job runs them against its own disposable PostgreSQL instance. See
+[regression test commands](badge-leaderboard-testing.md). Neither test mode uses
+the Pi's production database. The backend artifact is
 `api-<build-sha>` containing `api.tar`; the frontend artifact is
 `frontend-<build-sha>` containing the built static files. Both are retained for
 **30 days**. Overall successful backend CI includes the separate migration job,

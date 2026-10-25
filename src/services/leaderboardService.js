@@ -1,6 +1,7 @@
 import prisma from "../config/prismaClient.js";
 import { startOfUtcMonth, addUtcMonths, startOfUtcWeek, addUtcDays } from "../utils/date.js";
 import { normalizeLanguage } from "../utils/language.js";
+import { activeCurrentBadgeWhere } from "../utils/activeBadges.js";
 
 const FEATURE_BADGES = [
   "TOP_CREATOR_MONTH",
@@ -18,9 +19,7 @@ const WEIGHTS = {
   MOST_COMMENTED_WEEK: 2,
 };
 
-function getPeriodRange(period) {
-  const now = new Date();
-
+function getPeriodRange(period, now) {
   if (period === "week") {
     const from = startOfUtcWeek(now);
     const to = addUtcDays(from, 7);
@@ -48,30 +47,43 @@ function sumWeights(winsByBadge) {
 
 export async function getLeaderboardUsers({ language, period = "month", limit = 25 } = {}) {
   const lang = normalizeLanguage(language);
+  const now = new Date();
 
   const safePeriod = period === "week" || period === "month" || period === "all" ? period : "month";
 
-  const parsedLimit = Math.min(100, Math.max(1, Number(limit) || 25));
+  const requestedLimit = Number(limit);
+  const parsedLimit = Number.isSafeInteger(requestedLimit) ?
+    Math.min(100, Math.max(1, requestedLimit)) : 25;
 
-  const { from, to } = getPeriodRange(safePeriod);
+  const { from, to } = getPeriodRange(safePeriod, now);
   const timeFilter = from && to ? { gte: from, lt: to } : null;
 
   /**
-   * Badge wins are explicitly language-scoped.
+   * Featured wins and earned streak bonuses are explicitly language-scoped.
    */
-  const winsRows = await prisma.badgeAward.groupBy({
+  const awardRows = await prisma.badgeAward.groupBy({
     by: ["userId", "badge"],
     where: {
-      badge: { in: FEATURE_BADGES },
-      ...(timeFilter ? { awardedAt: timeFilter } : {}),
+      badge: { in: [...FEATURE_BADGES, "STREAK_BONUS"] },
+      ...(timeFilter ? {
+        OR: [
+          { scoringWindowStart: timeFilter },
+          { scoringWindowStart: null, awardedAt: timeFilter },
+        ],
+      } : {}),
       language: lang,
     },
     _count: { _all: true },
   });
 
   const winsByUser = new Map();
+  const streakBonusesByUser = new Map();
 
-  for (const row of winsRows) {
+  for (const row of awardRows) {
+    if (row.badge === "STREAK_BONUS") {
+      streakBonusesByUser.set(row.userId, row._count._all);
+      continue;
+    }
     if (!winsByUser.has(row.userId)) {
       winsByUser.set(row.userId, {});
     }
@@ -161,13 +173,17 @@ export async function getLeaderboardUsers({ language, period = "month", limit = 
   /**
    * Union of users appearing in this language slice.
    */
-  const userIds = new Set([...winsByUser.keys(), ...likesByUser.keys(), ...commentsByUser.keys()]);
+  const userIds = new Set([
+    ...winsByUser.keys(), ...streakBonusesByUser.keys(), ...likesByUser.keys(), ...commentsByUser.keys(),
+  ]);
 
   if (userIds.size === 0) return [];
 
   const users = await prisma.user.findMany({
     where: {
       id: { in: Array.from(userIds) },
+      active: true,
+      deletedAt: null,
     },
     select: {
       id: true,
@@ -176,7 +192,7 @@ export async function getLeaderboardUsers({ language, period = "month", limit = 
       role: true,
       dailyJokeStreak: true,
       dailyJokeBestStreak: true,
-      currentBadges: true,
+      currentBadges: { where: activeCurrentBadgeWhere(lang, now) },
     },
   });
 
@@ -184,13 +200,16 @@ export async function getLeaderboardUsers({ language, period = "month", limit = 
     const winsByBadge = winsByUser.get(user.id) ?? {};
     const winsTotal = Object.values(winsByBadge).reduce((sum, count) => sum + (count ?? 0), 0);
 
-    const featuredScore = sumWeights(winsByBadge);
+    const streakBonusPoints = streakBonusesByUser.get(user.id) ?? 0;
+    // Preserve the API's score field while adding one point per earned milestone.
+    const featuredScore = sumWeights(winsByBadge) + streakBonusPoints;
 
     return {
       user,
       winsByBadge,
       winsTotal,
       featuredScore,
+      streakBonusPoints,
       likesReceived: likesByUser.get(user.id) ?? 0,
       commentsReceived: commentsByUser.get(user.id) ?? 0,
       dailyStreak: user.dailyJokeStreak ?? 0,
@@ -211,11 +230,17 @@ export async function getLeaderboardUsers({ language, period = "month", limit = 
       return b.likesReceived - a.likesReceived;
     }
 
-    if (b.dailyStreak !== a.dailyStreak) {
-      return b.dailyStreak - a.dailyStreak;
+    if (b.commentsReceived !== a.commentsReceived) {
+      return b.commentsReceived - a.commentsReceived;
     }
 
-    return b.commentsReceived - a.commentsReceived;
+    // Ordinal ranks remain stable even when all scoring fields are tied.
+    // Avoid locale-dependent collation so workers agree on the final order.
+    const aUsername = a.user.username.normalize("NFKC").toLowerCase();
+    const bUsername = b.user.username.normalize("NFKC").toLowerCase();
+    if (aUsername < bUsername) return -1;
+    if (aUsername > bUsername) return 1;
+    return a.user.id - b.user.id;
   });
 
   return rows.slice(0, parsedLimit);
