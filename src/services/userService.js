@@ -1,5 +1,6 @@
 import prisma from "../config/prismaClient.js";
 import { normalizeLanguage } from "../utils/language.js";
+import { activeCurrentBadgeWhere } from "../utils/activeBadges.js";
 
 async function getUserById(id, { language } = {}) {
   const lang = normalizeLanguage(language);
@@ -8,7 +9,7 @@ async function getUserById(id, { language } = {}) {
     where: { id, active: true },
     include: {
       currentBadges: {
-        where: { language: lang },
+        where: activeCurrentBadgeWhere(lang),
         select: { id: true, badge: true, since: true, validTo: true, context: true, language: true },
       },
     },

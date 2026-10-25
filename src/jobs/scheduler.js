@@ -46,6 +46,7 @@ async function runOnceOnBoot() {
     await runForAllLanguages("computeTrendingThisWeek_boot", featuredService.computeTrendingThisWeek);
     await runForAllLanguages("computeMostCommentedThisWeek_boot", featuredService.computeMostCommentedThisWeek);
     await runForAllLanguages("computeFastestGrowing24h_boot", featuredService.computeFastestGrowing24h);
+    await runForAllLanguages("finalizeFastestGrowingDays_boot", featuredService.finalizeFastestGrowingDays);
     await runForAllLanguages("computeTopCreatorThisMonth_boot", featuredService.computeTopCreatorThisMonth);
 
     logger.info(
@@ -93,6 +94,7 @@ export function startScheduler() {
     "0 * * * *",
     async () => {
       await runForAllLanguages("computeFastestGrowing24h", featuredService.computeFastestGrowing24h);
+      await runForAllLanguages("finalizeFastestGrowingDays", featuredService.finalizeFastestGrowingDays);
     },
     { timezone: TZ }
   );

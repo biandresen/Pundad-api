@@ -1,4 +1,7 @@
 import { Router } from "express";
+import { query, header } from "express-validator";
+import checkValidation from "../middleware/checkValidation.js";
+import { SUPPORTED_LANGUAGES } from "../constants.js";
 import isAuthenticated from "../middleware/isAuthenticated.js";
 import isAdmin from "../middleware/isAdmin.js";
 import asyncErrorHandler from "../utils/asyncErrorHandler.js";
@@ -9,45 +12,32 @@ import { readHeavyLimiter } from "../middleware/rateLimiters.js";
 
 const router = Router();
 
-router.post(
-  "/admin/recompute/top-creator-month",
-  isAuthenticated,
-  isAdmin,
-  asyncErrorHandler(async (req, res) => {
-    const jokeId = await featuredService.computeTopCreatorThisMonth();
-    return successResponse(res, 200, "Top creator computed", { jokeId });
-  })
-);
+// Missing language follows the API default (NO); explicit invalid selectors are rejected.
+const recomputations = [
+  ["joke-of-the-day", featuredService.computeDailyJoke],
+  ["top-creator-month", featuredService.computeTopCreatorThisMonth],
+  ["most-commented-week", featuredService.computeMostCommentedThisWeek],
+  ["trending-week", featuredService.computeTrendingThisWeek],
+  ["fastest-growing", featuredService.computeFastestGrowing24h],
+  ["fastest-growing-daily", featuredService.finalizeFastestGrowingDays],
+];
 
-router.post(
-  "/admin/recompute/most-commented-week",
-  isAuthenticated,
-  isAdmin,
-  asyncErrorHandler(async (req, res) => {
-    const jokeId = await featuredService.computeMostCommentedThisWeek();
-    return successResponse(res, 200, "Most commented week computed", { jokeId });
-  })
-);
-
-router.post(
-  "/admin/recompute/trending-week",
-  isAuthenticated,
-  isAdmin,
-  asyncErrorHandler(async (req, res) => {
-    const jokeId = await featuredService.computeTrendingThisWeek();
-    return successResponse(res, 200, "Trending week computed", { jokeId });
-  })
-);
-
-router.post(
-  "/admin/recompute/fastest-growing",
-  isAuthenticated,
-  isAdmin,
-  asyncErrorHandler(async (req, res) => {
-    const jokeId = await featuredService.computeFastestGrowing24h();
-    return successResponse(res, 200, "Fastest growing computed", { jokeId });
-  })
-);
+for (const [slug, compute] of recomputations) {
+  router.post(
+    `/admin/recompute/${slug}`,
+    isAuthenticated,
+    isAdmin,
+    query("lang").optional().isString().bail().toUpperCase().isIn(SUPPORTED_LANGUAGES)
+      .withMessage("Language must be NO or EN"),
+    header("X-App-Language").optional().isString().bail().toUpperCase().isIn(SUPPORTED_LANGUAGES)
+      .withMessage("Language must be NO or EN"),
+    checkValidation,
+    asyncErrorHandler(async (req, res) => {
+      const result = await compute({ language: req.language });
+      return successResponse(res, 200, "Feature recomputed", result);
+    }),
+  );
+}
 
 // helper: map slug -> enum
 const FEATURE_SLUG_MAP = {
@@ -63,7 +53,7 @@ router.get(
   readHeavyLimiter,
   asyncErrorHandler(async (req, res) => {
     const slug = req.params.slug;
-    const language = req.language
+    const language = req.language;
     const type = FEATURE_SLUG_MAP[slug];
 
     if (!type) {
@@ -71,7 +61,7 @@ router.get(
       // or throw CustomError(400, "Unknown feature")
     }
 
-    const result = await featuredService.getCurrentFeatured(type, {language});
+    const result = await featuredService.getCurrentFeatured(type, { language });
 
     if (!result?.joke) {
       return successResponse(res, 200, "No featured joke yet", null);

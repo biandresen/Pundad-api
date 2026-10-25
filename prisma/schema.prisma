@@ -33,6 +33,7 @@ enum BadgeKey {
   MOST_COMMENTED_WEEK
   FASTEST_GROWING
   STREAK
+  STREAK_BONUS
 }
 
 enum AuditAction {
@@ -64,14 +65,27 @@ model BadgeAward {
   awardedAt DateTime @default(now())
   validFrom DateTime?
   validTo   DateTime?
+  scoringWindowStart DateTime?
   context   Json?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, badge, validFrom, language])
+  @@unique([badge, language, scoringWindowStart])
   @@index([userId, language, awardedAt])
   @@index([badge, language, awardedAt])
   @@index([language, awardedAt])
+}
+
+// Records completed daily calculations, including days with no eligible winner.
+model FeaturedAwardWindow {
+  id          Int      @id @default(autoincrement())
+  badge       BadgeKey
+  language    Language
+  windowStart DateTime
+  finalizedAt DateTime @default(now())
+
+  @@unique([badge, language, windowStart])
 }
 
 model CurrentUserBadge {
@@ -147,6 +161,21 @@ model User {
 
   currentBadges           CurrentUserBadge[]
   badgeAwards             BadgeAward[]
+  languageStreaks         DailyJokeStreak[]
+}
+
+// Scoring progress starts prospectively and is independent in each language.
+model DailyJokeStreak {
+  userId         Int
+  language       Language
+  streak         Int      @default(0)
+  bestStreak     Int      @default(0)
+  lastViewedAt   DateTime
+  policyStartUtc DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, language])
 }
 
 model Joke {

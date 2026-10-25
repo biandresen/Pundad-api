@@ -33,6 +33,13 @@ router.get("/random", asyncErrorHandler(jokeController.getRandomJoke));
 
 router.get("/daily", asyncErrorHandler(jokeController.getDailyJoke));
 
+router.get(
+  "/daily/streak",
+  readHeavyLimiter,
+  isAuthenticated,
+  asyncErrorHandler(jokeController.getDailyStreak)
+);
+
 router.post(
   "/daily/view",
   readHeavyLimiter,
