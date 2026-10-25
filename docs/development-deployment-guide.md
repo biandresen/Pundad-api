@@ -632,6 +632,20 @@ TURNSTILE_SECRET_KEY=REPLACE_WITH_THE_REAL_WIDGET_SECRET
 TURNSTILE_ALLOWED_HOSTNAMES=pundad.app,www.pundad.app
 ```
 
+The production environment guard is fixed outside release artifacts. Whenever
+`ops/deploy/productionEnvironment.js` changes, install the reviewed copy before
+the next production deployment (the full `ops/deploy/provision.py` installer
+does this too):
+
+```bash
+sudo install -o root -g root -m 0644 \
+  ops/deploy/productionEnvironment.js \
+  /usr/local/lib/pundad-deploy/productionEnvironment.js
+```
+
+Installing the guard does not restart the API. The next deployment or service
+restart validates `/etc/pundad/production/api.env` with the updated checks.
+
 One widget/key pair can serve both environments when both domains are allowed
 in Cloudflare. A separate staging widget is also possible, but then staging
 needs a separately built frontend with its own site key; the current shared CI
