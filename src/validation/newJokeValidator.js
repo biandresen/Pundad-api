@@ -1,5 +1,6 @@
 import { body } from "express-validator";
 import { MAX_CHARS } from "../constants.js";
+import postBodyValidator from "./postBodyValidator.js";
 
 const newJokeValidator = [
   body("title")
@@ -7,10 +8,7 @@ const newJokeValidator = [
   .trim()
   .isLength({ max: MAX_CHARS.TITLE }).withMessage(`Title is too long. Max ${MAX_CHARS.TITLE} characters`),
 
-  body("body")
-  .notEmpty().withMessage("Body cannot be empty")
-  .trim()
-  .isLength({ max: MAX_CHARS.BODY }).withMessage(`Text is too long. Max ${MAX_CHARS.BODY} characters`),
+  postBodyValidator(),
 
   body("tags")
   .optional()

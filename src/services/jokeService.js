@@ -1,4 +1,5 @@
 import prisma from "../config/prismaClient.js";
+import { validatePostBody } from "../utils/postBody.js";
 
 import { FEATURED_JOKE } from "../constants.js";
 import { startOfUtcDay } from "../utils/date.js";
@@ -278,6 +279,7 @@ async function createJoke(
   tags = [],
   { language } = {},
 ) {
+  body = validatePostBody(body);
   const lang = normalizeLanguage(language);
   const normalizedTags = uniqueNormalizedTags(tags);
 
@@ -311,14 +313,13 @@ async function updateJoke(
 
   const existing = await prisma.joke.findUnique({
     where: { id: Number(jokeId) },
-    select: { id: true, language: true },
+    select: { id: true, language: true, body: true },
   });
 
   if (!existing || existing.language !== lang) return null;
 
-  const updateData = {};
+  const updateData = { body: validatePostBody(body === undefined ? existing.body : body) };
   if (title !== undefined) updateData.title = title;
-  if (body !== undefined) updateData.body = body;
   if (published !== undefined) updateData.published = published;
 
   if (tags !== undefined) {
@@ -366,12 +367,18 @@ async function deleteJoke(jokeId, { language } = {}) {
 
 async function publishDraft(jokeId, { language } = {}) {
   const lang = normalizeLanguage(language);
+  const existing = await prisma.joke.findFirst({
+    where: { id: jokeId, language: lang, published: false },
+    select: { body: true },
+  });
+  if (!existing) return false;
+  const body = validatePostBody(existing.body);
 
   const updated = await prisma.joke.updateMany({
-    where: { id: jokeId, language: lang, published: false },
-    data: { published: true },
+    // Do not publish stale content if another request edited the draft.
+    where: { id: jokeId, language: lang, published: false, body: existing.body },
+    data: { published: true, body },
   });
-
   return updated.count > 0;
 }
 
